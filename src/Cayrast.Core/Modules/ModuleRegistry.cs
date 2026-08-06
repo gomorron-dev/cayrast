@@ -139,9 +139,16 @@ public sealed class ModuleRegistry(
             directory,
             permissions,
 
-            // Third-party modules are sandboxed by default. Promotion to in-process is
-            // an explicit user action that states what is being given up.
-            ModuleTrustLevel.Sandboxed,
+            // NOT YET SANDBOXED. The design calls for third-party modules to run in a
+            // separate low-integrity process, and the IPC contract that makes that a
+            // hosting change rather than an API change is in place — but
+            // Cayrast.ModuleHost is still a stub, so modules load in-process today.
+            //
+            // Reporting InProcess is deliberate. Claiming Sandboxed while loading
+            // in-process would make the plugin manager tell users a security boundary
+            // exists when it does not, which is worse than having no boundary at all:
+            // it would lead someone to install a module they would otherwise refuse.
+            ModuleTrustLevel.InProcess,
             ModuleState.Disabled);
 
         _modules[id] = installed;
@@ -202,6 +209,13 @@ public sealed class ModuleRegistry(
         // The user may grant less than the manifest requested; a module can never end
         // up with more than it asked for.
         broker.Grant(moduleId, grantedPermissions & installed.RequestedPermissions);
+
+        // Recorded on every load until the sandbox exists. A module in this process can
+        // P/Invoke anything regardless of what it declared, so the permission set is
+        // advisory — and that fact belongs in the log rather than only in a comment.
+        logger.LogWarning(
+            "Loading module '{Module}' in-process. Sandboxing is not yet implemented, so its declared permissions ({Permissions}) are advisory and not enforced by the operating system.",
+            moduleId, installed.RequestedPermissions);
 
         try
         {

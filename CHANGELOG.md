@@ -14,7 +14,36 @@ versions. Such changes are always called out under **Changed** with a migration 
 
 ### Added
 
-Phase 1 — the application now launches, registers its hotkey, and shows a window.
+Phase 2 — the launcher does its actual job, and the plugin SDK is real.
+
+- **Search**: fzf-style fuzzy matching with highlighted match positions, a streaming
+  pipeline that fans out to providers concurrently and paints results as they arrive,
+  per-keystroke cancellation, and frecency ranking with exponential decay
+- **Application index** via the shell's AppsFolder, covering desktop and Store
+  applications through one code path
+- **Commands**: `calc`, `uuid`, `base64`, `urlencode`, `md5`/`sha1`/`sha256`/`sha512`,
+  `timestamp`, `json`, and `help` — with live preview as you type. The calculator uses
+  a hand-written parser rather than a scripting engine, so pasted text can never become
+  executed code
+- **Settings**: a descriptor registry that generates the settings screen *and* powers
+  settings search, so the two cannot drift apart. Searching "glass" finds transparency
+- **Modules**: `.cayrast` package loading with manifest validation, a permission
+  broker, collectible `AssemblyLoadContext` isolation, and clean unload
+- **Theme model** with allow-list validation of CSS values
+- **Plugin SDK** plus a worked example module that the test suite packs, installs,
+  loads, exercises, and unloads on every run
+- **Installer** (Inno Setup) with component selection and a WebView2 runtime check
+
+### Known limitation
+
+- **Module sandboxing is not implemented.** `Cayrast.ModuleHost` is a stub, so modules
+  load in-process and their declared permissions are advisory rather than enforced.
+  Cayrast reports modules as in-process and logs a warning on every load rather than
+  claiming a boundary it does not have. See [SECURITY.md](SECURITY.md).
+
+### Earlier — Phase 1
+
+The application launches, registers its hotkey, and shows a window.
 
 - Warm launcher window: a hidden WPF host with a WebView2 created once at startup, so
   Alt+Space is a show call rather than a browser initialisation

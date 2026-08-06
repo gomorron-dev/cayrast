@@ -40,12 +40,17 @@ public sealed class PermissionDeniedException(ModuleId moduleId, ModulePermissio
 /// capability use necessarily passes through here.
 /// </para>
 /// <para>
-/// <b>What this does and does not guarantee.</b> For a sandboxed module the broker
-/// check is backed by an operating system boundary: the module runs in a separate
-/// low-integrity process and cannot reach the filesystem by calling Win32 directly. For
-/// an in-process module the check is advisory — a loaded assembly can P/Invoke anything
-/// regardless of what it declared. This is why third-party modules default to sandboxed
-/// and why promoting one to in-process states plainly what is being given up.
+/// <b>⚠️ What this does and does not guarantee, today.</b> Every module currently loads
+/// in-process, because <c>Cayrast.ModuleHost</c> is still a stub. In-process, this check
+/// is <em>advisory</em>: a loaded assembly can P/Invoke anything regardless of what it
+/// declared, so the broker catches mistakes and honest modules degrading gracefully —
+/// not malice.
+/// </para>
+/// <para>
+/// Once the sandbox exists, the same check becomes enforcement for third-party modules,
+/// because it will be backed by an operating system boundary: a low-integrity process
+/// that cannot reach the filesystem by calling Win32 directly. Nothing in this class
+/// changes when that happens; only where the module runs does.
 /// </para>
 /// </remarks>
 public sealed class PermissionBroker(ILogger<PermissionBroker> logger)

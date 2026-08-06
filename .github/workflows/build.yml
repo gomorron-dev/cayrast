@@ -40,6 +40,20 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('**/Directory.Packages.props', '**/*.csproj') }}
           restore-keys: nuget-${{ runner.os }}-
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/shell/package-lock.json
+
+      - name: Build the frontend
+        # Built before the .NET build, which copies its output into the launcher. Without
+        # this the application starts with no interface, and the csproj emits a warning
+        # rather than failing — so CI has to do it explicitly.
+        run: npm ci && npm run build
+        working-directory: ui/shell
+
       - name: Restore
         run: dotnet restore Cayrast.slnx
 

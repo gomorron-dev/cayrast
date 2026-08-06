@@ -46,6 +46,14 @@ third-party modules. The parts most worth your attention:
 These are documented design positions, not vulnerabilities. Reporting them is fine,
 but they are not treated as new findings.
 
+- **⚠️ Module sandboxing is not implemented yet.** `Cayrast.ModuleHost` is a stub, so
+  every module currently loads in-process and its declared permissions are advisory
+  rather than enforced by the operating system. **Treat installing a Cayrast module as
+  equivalent to running any other program you downloaded.** The product does not claim
+  otherwise: the registry reports modules as in-process and logs a warning on every
+  load. Until this lands, the permission system is a statement of intent by the module
+  author, not a control.
+
 - **In-process modules are fully trusted.** A module the user explicitly promoted to
   in-process can do anything the user can. This is stated in the UI at the moment of
   promotion. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#3-modules-the-hybrid-hosting-model).

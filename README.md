@@ -14,14 +14,37 @@ One hotkey. Search everything, run anything, and replace a folder full of small 
 
 ---
 
-> ### ⚠️ Status: pre-alpha — not yet usable
+> ### ⚠️ Status: pre-alpha — buildable, not yet released
 >
-> Cayrast is in **Phase 1 of 5**. The architecture, contracts, and build pipeline
-> are in place; the application does not run yet. There is no installer and no
-> release to download.
+> **Phases 1 and 2 are complete.** Cayrast builds, launches, registers Alt+Space,
+> indexes your applications, runs commands, and loads modules. If you build from
+> source it works today.
 >
-> This notice will be replaced with real screenshots and a download link when
-> Phase 1 lands. Follow [the roadmap](docs/ROADMAP.md) for progress.
+> There is still **no installer artifact to download** and no tagged release, and the
+> official modules from Phase 3 (clipboard, file tools, QR, widgets) are not written
+> yet. Follow [the roadmap](docs/ROADMAP.md) for what is done and what is next.
+>
+> Screenshots will be added when the interface stops changing week to week.
+
+## What works today
+
+Built from source, on Windows 11:
+
+- **Alt+Space opens instantly** — the window and its WebView2 are created once at
+  startup and only shown and hidden thereafter
+- **Search across applications, commands, and settings**, ranked together with fuzzy
+  matching, highlighted match positions, and frecency
+- **284 applications indexed** on the development machine, matching what the Start
+  Menu itself reports — desktop and Store apps through one code path
+- **Commands** — `calc`, `uuid`, `base64`, `sha256`, `timestamp`, `json`, `help`, with
+  live preview as you type
+- **Generated, searchable settings** — find the transparency slider by typing "glass"
+- **Modules** load from `.cayrast` packages into isolated, unloadable contexts, with
+  permissions checked at a broker — though **sandboxing is not built yet**, so those
+  permissions are advisory today. See [SECURITY.md](SECURITY.md).
+
+175 tests pass, including ones that build genuinely malicious module packages and
+confirm they are refused.
 
 ---
 
@@ -79,10 +102,17 @@ Not yet available. Phase 4 ships the installer and auto-updates.
 - [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) — preinstalled on Windows 11
 - Windows 10 (1809+) or Windows 11
 
-**Build and test**
+**Build and run**
 
 ```bash
 git clone https://github.com/cayrast/cayrast.git
+```
+
+The frontend is built separately, and the .NET build copies its output. Build it first
+or the launcher starts with no interface:
+
+```bash
+cd ui/shell && npm install && npm run build
 ```
 
 ```bash
@@ -90,11 +120,17 @@ dotnet build Cayrast.slnx
 ```
 
 ```bash
+dotnet run --project src/Cayrast.Shell
+```
+
+Then press **Alt+Space**.
+
+```bash
 dotnet test Cayrast.slnx
 ```
 
 The solution builds warnings-clean and is expected to stay that way — warnings are
-errors in this repository.
+errors in this repository, and so are known-vulnerable NuGet packages.
 
 ## Architecture
 
@@ -137,15 +173,34 @@ optional frontend, and a declared set of permissions.
 }
 ```
 
-The SDK is public and versioned, and official modules use it exactly as written —
-if a built-in module can do something, so can yours. Full guide arriving with
-Phase 2: [docs/PLUGIN_GUIDE.md](docs/PLUGIN_GUIDE.md).
+The SDK is public and versioned, and official modules use it exactly as written — if a
+built-in module can do something, so can yours. A complete worked example lives in
+[`modules/Cayrast.Modules.Example`](modules/Cayrast.Modules.Example); it is packed,
+installed, loaded, and exercised by the test suite on every run, so it cannot silently
+rot.
+
+Full guide: **[docs/PLUGIN_GUIDE.md](docs/PLUGIN_GUIDE.md)**.
 
 ## Creating a theme
 
-Themes are `.cayrast-theme` packages that override CSS custom properties — colors,
-typography, spacing, radii, animation timings. No recompilation, no restart.
-Guide arriving with Phase 2: [docs/THEME_GUIDE.md](docs/THEME_GUIDE.md).
+Themes are `.cayrast-theme` files that override CSS custom properties — colours,
+typography, spacing, radii, animation timings. No code, no build step, no restart.
+
+Values are validated against an allow-list before they reach the stylesheet, because a
+theme file downloaded from anywhere is untrusted input and CSS is executable enough to
+matter.
+
+Full guide: **[docs/THEME_GUIDE.md](docs/THEME_GUIDE.md)**.
+
+## Documentation
+
+| | |
+|---|---|
+| [User guide](docs/USER_GUIDE.md) | Using the launcher, commands, settings, privacy |
+| [Plugin guide](docs/PLUGIN_GUIDE.md) | Writing a module |
+| [Theme guide](docs/THEME_GUIDE.md) | Writing a theme |
+| [Architecture](docs/ARCHITECTURE.md) | Why it is built this way, and what was rejected |
+| [Roadmap](docs/ROADMAP.md) | What is done and what is next |
 
 ## Contributing
 

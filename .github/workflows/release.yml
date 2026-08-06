@@ -64,21 +64,53 @@ jobs:
       - name: Publish shell
         run: dotnet publish src/Cayrast.Shell/Cayrast.Shell.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/publish -p:VersionPrefix=${{ steps.version.outputs.prefix }} -p:VersionSuffix=${{ steps.version.outputs.suffix }}
 
-      # Phase 4 adds the Inno Setup installer here. Until then a release ships the
-      # published output as an archive, which is honest about what exists rather
-      # than shipping an installer stub that pretends otherwise.
+      - name: Build the frontend
+        run: npm ci && npm run build
+        working-directory: ui/shell
+
+      - name: Copy the frontend into the publish output
+        shell: pwsh
+        run: |
+          # The launcher has no interface without this. Publishing does not run the
+          # csproj's CopyFrontend target, so it is done explicitly here.
+          New-Item -ItemType Directory -Force -Path artifacts/publish/ui | Out-Null
+          Copy-Item -Path ui/shell/dist/* -Destination artifacts/publish/ui -Recurse -Force
+
+      - name: Build the installer
+        shell: pwsh
+        run: |
+          # Inno Setup is preinstalled on GitHub's windows-latest images.
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+
+          if (-not (Test-Path $iscc)) {
+            Write-Host "::warning::Inno Setup was not found; the release will ship the archive only."
+            exit 0
+          }
+
+          & $iscc "tools/Cayrast.Installer/Cayrast.iss" `
+            "/DAppVersion=${{ steps.version.outputs.full }}" `
+            "/DSourceDir=$(Resolve-Path artifacts/publish)"
 
       - name: Package
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path artifacts/release | Out-Null
+
+          # The archive ships regardless: it is the fallback if the installer step was
+          # skipped, and some users prefer a portable copy anyway.
           $name = "Cayrast-${{ steps.version.outputs.full }}-win-x64.zip"
           Compress-Archive -Path artifacts/publish/* -DestinationPath "artifacts/release/$name"
 
+          $installer = "tools/Cayrast.Installer/Output/Cayrast-${{ steps.version.outputs.full }}-Setup.exe"
+          if (Test-Path $installer) {
+            Copy-Item $installer artifacts/release/
+          }
+
           # Publish checksums with every release. Cayrast has no code-signing
           # certificate yet, so this is the only integrity check users have.
-          Get-FileHash "artifacts/release/$name" -Algorithm SHA256 |
-            ForEach-Object { "$($_.Hash.ToLower())  $name" } |
+          Get-ChildItem artifacts/release -File -Exclude SHA256SUMS.txt |
+            Get-FileHash -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" } |
             Out-File -FilePath artifacts/release/SHA256SUMS.txt -Encoding utf8
 
           Get-Content artifacts/release/SHA256SUMS.txt
@@ -94,6 +126,7 @@ jobs:
           name: Cayrast ${{ steps.version.outputs.full }}
           tag_name: ${{ github.ref_name }}
           files: |
+            artifacts/release/*.exe
             artifacts/release/*.zip
             artifacts/release/SHA256SUMS.txt
           body: |

@@ -122,7 +122,12 @@ public sealed class ModuleLifecycleTests : IDisposable
 
         var installed = await registry.InstallAsync(package, Token);
         Assert.Equal(ModuleState.Disabled, installed.State);
-        Assert.Equal(ModuleTrustLevel.Sandboxed, installed.TrustLevel);
+
+        // Asserts InProcess, not Sandboxed, because that is the truth today:
+        // Cayrast.ModuleHost is a stub and modules load in-process. This assertion is
+        // deliberately written to fail when the sandbox lands, so that whoever builds
+        // it is forced to revisit every place the trust level is reported to a user.
+        Assert.Equal(ModuleTrustLevel.InProcess, installed.TrustLevel);
 
         var enabled = await registry.EnableAsync(installed.Id, permissions, Token);
 

@@ -3,7 +3,7 @@
 Cayrast is built in five phases. Each ends at a tree that **builds, runs, and is
 demoable** — no phase leaves the repository in a broken intermediate state.
 
-**Current phase: 2 (Engines) — in progress.**
+**Current phase: 3 (Official modules) — next.**
 
 ---
 
@@ -48,26 +48,40 @@ initialisers survive JSON reliably.
 
 ---
 
-## Phase 2 — Engines
+## Phase 2 — Engines ✅ complete
 
-The launcher does its actual job, and the SDK becomes real.
+The launcher does its actual job, and the SDK is real.
 
-- [ ] Streaming search pipeline: concurrent fan-out, per-keystroke cancellation, ranked merge
-- [ ] fzf-style fuzzy scorer with match-index highlighting
-- [ ] Frecency store (SQLite)
-- [ ] Application indexer: Start Menu `.lnk` + UWP packages, cached, file-watcher refresh
-- [ ] Filesystem provider
-- [ ] Command engine, `help`, and built-ins (`calc`, `uuid`, `base64`, …)
-- [ ] User-defined commands
-- [ ] Settings registry, generated settings UI, settings search
-- [ ] Theme engine and `.cayrast-theme` loading
-- [ ] **Module system**: `.cayrast` packages, manifest validation, permission consent,
-      broker, `AssemblyLoadContext` loading, `ModuleHost` sandbox, IPC transport
-- [ ] `Cayrast.Sdk` v1 published
+- [x] Streaming search pipeline: concurrent fan-out, per-keystroke cancellation, ranked merge
+- [x] fzf-style fuzzy scorer with match-index highlighting
+- [x] Frecency store with exponential decay
+- [x] Application indexer via the shell's AppsFolder — desktop and Store apps in one path
+- [x] Command engine, `help` generated from descriptors, and built-ins
+- [x] Settings registry, generated settings screen, settings search by keyword
+- [x] Theme model with allow-list value validation
+- [x] **Module system**: `.cayrast` packages, manifest validation, permission broker,
+      collectible `AssemblyLoadContext` loading, clean unload
+- [x] `Cayrast.Sdk` with a worked, tested example module
 
-**Done when:** typing finds and launches applications, `calc 20*50` answers inline,
-and a module loaded from a `.cayrast` file contributes results — sandboxed, with
-permissions actually enforced.
+**Verified:** the example module is packed, installed, loaded, exercised, and unloaded
+by the integration suite on every run. Application indexing was checked against
+`Get-StartApps` and matches exactly.
+
+### Deferred from Phase 2
+
+Recorded honestly rather than quietly dropped:
+
+- **Filesystem search provider.** The pipeline supports it; the provider is not written.
+- **User-defined commands.** The command engine supports registration; there is no UI
+  or storage format for user commands yet.
+- **`ModuleHost` sandbox process.** `Cayrast.ModuleHost` is a stub. Modules currently
+  load in-process, which means the permission broker is advisory rather than
+  OS-enforced. The IPC contract that makes the sandbox a configuration change rather
+  than a rewrite is in place and used by the WebView2 bridge — but the sandbox itself
+  is not built, and until it is, `ModuleTrustLevel.Sandboxed` is aspirational. This is
+  the single most important outstanding item.
+- **`.cayrast-theme` loading.** The model and validator exist and are tested; the
+  loader that reads them from disk and applies them is not written.
 
 ---
 

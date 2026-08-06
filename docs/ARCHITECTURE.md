@@ -120,6 +120,25 @@ First-party modules run **in-process**. Third-party modules run **sandboxed** in
 low-integrity child process, and may be promoted to in-process only by an explicit
 user action that states plainly what is being given up.
 
+> ### ⚠️ The sandbox is not implemented yet
+>
+> **`Cayrast.ModuleHost` is a stub. Every module currently loads in-process.**
+>
+> The permission broker is therefore advisory today, not enforced: a loaded assembly
+> can P/Invoke anything regardless of its manifest. The registry reports
+> `ModuleTrustLevel.InProcess` rather than `Sandboxed` and logs a warning on every
+> module load, precisely so that nothing in the product claims a boundary that does
+> not exist — telling a user a module is sandboxed when it is not would lead them to
+> install something they would otherwise refuse.
+>
+> What *is* built is the part that would be expensive to retrofit: the `IpcEnvelope`
+> contract, already carrying the WebView2 bridge in production. Because module calls
+> are shaped for a process boundary from the start, adding the sandbox is a hosting
+> change rather than a breaking API change for modules already published — which was
+> the whole point of choosing the hybrid model up front.
+>
+> This is the single most important outstanding item in the project.
+
 ### What makes it work
 
 Both paths speak the identical contract — [`IpcEnvelope`](../src/Cayrast.Abstractions/Ipc/IpcEnvelope.cs).
@@ -141,8 +160,10 @@ disagrees, the transport can special-case it behind the same type.
 1. **Broker.** Modules never receive a raw `FileStream` or `HttpClient`. They ask the
    host, and the host checks `GrantedPermissions` first. This is also the natural
    place to record activity for the audit UI.
-2. **Process.** For sandboxed modules the broker is backed by a low-integrity token,
-   so calling Win32 directly to bypass it fails at the kernel.
+2. **Process.** *(Designed, not yet built.)* For sandboxed modules the broker would be
+   backed by a low-integrity token, so calling Win32 directly to bypass it fails at the
+   kernel. Until `Cayrast.ModuleHost` exists, points 1 and 3 are the only real
+   enforcement, and point 1 protects only against mistakes rather than against malice.
 3. **Origin.** Each module's UI is served from its own virtual host inside a sandboxed
    iframe, so same-origin policy — enforced by the browser, not by us — prevents any
    module UI from reading the shell's DOM or another module's storage.
