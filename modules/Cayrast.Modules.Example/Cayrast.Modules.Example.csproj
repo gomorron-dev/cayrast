@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    A worked example of a Cayrast module.
+
+    Deliberately references only Cayrast.Sdk - the same package a third-party author
+    installs from NuGet. It has no access to Cayrast.Core and cannot reach host
+    internals, which is the property that keeps the SDK honest: if this module can do
+    something, so can anyone's.
+
+    Targets plain net10.0, not net10.0-windows. A module needs Windows APIs only if it
+    genuinely uses them, and staying platform-neutral keeps it loadable in a sandboxed
+    host process without dragging in the desktop runtime.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Cayrast.Modules.Example</RootNamespace>
+    <AssemblyName>main</AssemblyName>
+    <IsPackable>false</IsPackable>
+
+    <!-- Modules load into their own AssemblyLoadContext and are never the entry point. -->
+    <OutputType>Library</OutputType>
+
+    <!-- Emits main.deps.json so the module's own dependencies resolve from beside it. -->
+    <GenerateDependencyFile>true</GenerateDependencyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Cayrast.Sdk\Cayrast.Sdk.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="manifest.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

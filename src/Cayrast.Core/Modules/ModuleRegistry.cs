@@ -251,7 +251,7 @@ public sealed class ModuleRegistry(
         var loadContext = new ModuleLoadContext(installed.Id.Value, assemblyPath);
         var assembly = loadContext.LoadFromAssemblyPath(assemblyPath);
 
-        var moduleType = Array.Find(assembly.GetTypes(),
+        var moduleType = Array.Find(GetLoadableTypes(assembly, installed.Manifest.Entry),
             type => typeof(ICayrastModule).IsAssignableFrom(type) && type is { IsAbstract: false, IsInterface: false })
             ?? throw new InvalidOperationException(
                 $"'{installed.Manifest.Entry}' contains no public type implementing {nameof(ICayrastModule)}.");
@@ -273,6 +273,45 @@ public sealed class ModuleRegistry(
         }
 
         return new LoadedModule(instance, loadContext, context);
+    }
+
+    /// <summary>
+    /// Enumerates an assembly's types, reporting usefully when some cannot be loaded.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Assembly.GetTypes"/> throws if any single type fails to load, and its
+    /// message — "Unable to load one or more of the requested types" — names neither the
+    /// type nor the missing dependency. For a plugin host that is the most common
+    /// failure there is, and the least diagnosable. Unwrapping the loader exceptions
+    /// turns it into an error that names the assembly the module is actually missing.
+    /// </remarks>
+    private Type[] GetLoadableTypes(Assembly assembly, string entryName)
+    {
+        try
+        {
+            return assembly.GetTypes();
+        }
+        catch (ReflectionTypeLoadException ex)
+        {
+            var reasons = ex.LoaderExceptions
+                .Where(loaderException => loaderException is not null)
+                .Select(loaderException => loaderException!.Message)
+                .Distinct(StringComparer.Ordinal)
+                .Take(3)
+                .ToList();
+
+            logger.LogError(ex, "Some types in '{Entry}' could not be loaded: {Reasons}", entryName, string.Join("; ", reasons));
+
+            // Types that did load are still usable, and one of them may well be the
+            // module's entry point — a module with an unused broken type should not be
+            // rejected outright.
+            var loaded = ex.Types.Where(type => type is not null).Select(type => type!).ToArray();
+
+            return loaded.Length > 0
+                ? loaded
+                : throw new InvalidOperationException(
+                    $"No types in '{entryName}' could be loaded. Missing dependency? {string.Join("; ", reasons)}");
+        }
     }
 
     /// <inheritdoc />

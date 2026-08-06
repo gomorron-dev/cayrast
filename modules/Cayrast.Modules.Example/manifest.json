@@ -1,0 +1,11 @@
+{
+  "name": "Example Module",
+  "id": "cayrast.example",
+  "version": "1.0.0",
+  "author": "Cayrast Contributors",
+  "description": "A worked example showing how to contribute commands, search results, and settings.",
+  "permissions": [],
+  "entry": "main.dll",
+  "minHostVersion": "0.1.0",
+  "homepage": "https://github.com/cayrast/cayrast"
+}

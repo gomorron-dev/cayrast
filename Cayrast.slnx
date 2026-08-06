@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/modules/">
+    <Project Path="modules/Cayrast.Modules.Example/Cayrast.Modules.Example.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Cayrast.Abstractions/Cayrast.Abstractions.csproj" />
     <Project Path="src/Cayrast.Core/Cayrast.Core.csproj" />

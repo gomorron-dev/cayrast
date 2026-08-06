@@ -21,6 +21,22 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Cayrast.Core\Cayrast.Core.csproj" />
     <ProjectReference Include="..\..\src\Cayrast.Platform.Windows\Cayrast.Platform.Windows.csproj" />
+
+    <!--
+      Referenced so Cayrast.Sdk is present in this test host's default load context,
+      mirroring the real shell. ModuleLoadContext deliberately resolves the SDK from
+      the host rather than the module directory, so a host without it cannot load any
+      module that uses the SDK.
+    -->
+    <ProjectReference Include="..\..\src\Cayrast.Sdk\Cayrast.Sdk.csproj" />
+
+    <!--
+      Ensures the example module is built before these tests run, so the lifecycle test
+      has a real package to pack. ReferenceOutputAssembly is false because the test
+      must load it dynamically, exactly as the host would, rather than linking it.
+    -->
+    <ProjectReference Include="..\..\modules\Cayrast.Modules.Example\Cayrast.Modules.Example.csproj"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
