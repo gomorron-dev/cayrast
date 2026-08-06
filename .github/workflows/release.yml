@@ -22,14 +22,32 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/shell/package-lock.json
+
+      # The frontend is built before the .NET build, not after. The Shell csproj copies
+      # ui/shell/dist into its output, and if that directory does not exist yet the
+      # build emits a "frontend has not been built" warning on every release.
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: ui/shell
+
+      - name: Build the frontend
+        run: npm run build
+        working-directory: ui/shell
 
       - name: Resolve version
         id: version
@@ -63,10 +81,6 @@ jobs:
 
       - name: Publish shell
         run: dotnet publish src/Cayrast.Shell/Cayrast.Shell.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/publish -p:VersionPrefix=${{ steps.version.outputs.prefix }} -p:VersionSuffix=${{ steps.version.outputs.suffix }}
-
-      - name: Build the frontend
-        run: npm ci && npm run build
-        working-directory: ui/shell
 
       - name: Copy the frontend into the publish output
         shell: pwsh
@@ -116,7 +130,7 @@ jobs:
           Get-Content artifacts/release/SHA256SUMS.txt
 
       - name: Create draft release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           # Deliberately a draft. A maintainer reviews the artifacts and writes the
           # notes before anything reaches users — releases are not something to

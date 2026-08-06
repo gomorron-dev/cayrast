@@ -53,15 +53,6 @@ class AppState {
   /** Installed modules, shown in settings. */
   modules = $state<ModuleInfo[]>([]);
 
-  /**
-   * The query whose results are currently displayed.
-   *
-   * Partial results arrive as unsolicited events while the user keeps typing, so each
-   * batch has to be checked against what is on screen now. Without this the list would
-   * visibly flicker backwards as a slower earlier query reported in.
-   */
-  #displayedQuery = '';
-
   #debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
   /** The currently selected result, if any. */
@@ -93,7 +84,7 @@ class AppState {
         return;
       }
 
-      this.#applyResults(payload.query, payload.results);
+      this.#applyResults(payload.results);
     });
 
     bridge.on('app.shown', () => this.onShown());
@@ -195,7 +186,6 @@ class AppState {
 
     if (value.trim().length === 0) {
       this.results = [];
-      this.#displayedQuery = '';
       this.searching = false;
       clearTimeout(this.#debounceTimer);
       return;
@@ -217,7 +207,7 @@ class AppState {
       // The response can land after the user has moved on; partial events have the
       // same hazard and the same guard.
       if (response && response.query === this.query.trim()) {
-        this.#applyResults(response.query, response.results);
+        this.#applyResults(response.results);
         this.error = null;
       }
     } catch (error) {
@@ -232,9 +222,15 @@ class AppState {
     }
   }
 
-  #applyResults(query: string, results: SearchResult[]): void {
+  /**
+   * Replaces the visible results.
+   *
+   * Callers check the query still matches before calling — partial results arrive as
+   * unsolicited events while the user keeps typing, and applying a stale batch would
+   * make the list visibly flicker backwards as a slower earlier query reported in.
+   */
+  #applyResults(results: SearchResult[]): void {
     const previousId = this.selected?.id;
-    this.#displayedQuery = query;
     this.results = results ?? [];
 
     // Keep the selection on whatever the user had highlighted if it survived the

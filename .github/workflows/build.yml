@@ -24,34 +24,49 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           # Sourced from global.json so CI and local machines can never disagree
           # about the SDK version.
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/Directory.Packages.props', '**/*.csproj') }}
           restore-keys: nuget-${{ runner.os }}-
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: ui/shell/package-lock.json
 
+      - name: Install frontend dependencies
+        # `npm ci` rather than `npm install`, deliberately. It refuses to proceed when
+        # package.json and the lockfile disagree, which is exactly how the TypeScript
+        # 7 / svelte-check peer conflict was caught — `npm install` had silently
+        # resolved around it and produced a lockfile that could not be reinstalled.
+        run: npm ci
+        working-directory: ui/shell
+
+      - name: Type-check the frontend
+        # svelte-check is the only thing that type-checks .svelte files; Vite happily
+        # builds code that does not type-check, because esbuild strips types without
+        # verifying them.
+        run: npm run check
+        working-directory: ui/shell
+
       - name: Build the frontend
-        # Built before the .NET build, which copies its output into the launcher. Without
-        # this the application starts with no interface, and the csproj emits a warning
-        # rather than failing — so CI has to do it explicitly.
-        run: npm ci && npm run build
+        # Built before the .NET build, which copies its output into the launcher.
+        # Without this the application starts with no interface, and the csproj emits a
+        # warning rather than failing — so CI has to do it explicitly.
+        run: npm run build
         working-directory: ui/shell
 
       - name: Restore
@@ -68,7 +83,7 @@ jobs:
       - name: Upload test results
         # Test results are most valuable precisely when the run failed.
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: test-results
           path: artifacts/test-results
@@ -78,7 +93,7 @@ jobs:
         run: dotnet publish src/Cayrast.Shell/Cayrast.Shell.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/publish
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: cayrast-win-x64
           path: artifacts/publish
