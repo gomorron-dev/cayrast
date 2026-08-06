@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Cayrast.ModuleHost — the sandbox.
+
+    One short-lived child process per untrusted module. Launched by the shell
+    with a restricted (low-integrity) token, it loads the module assembly into a
+    collectable AssemblyLoadContext and speaks the same IPC envelope the in-proc
+    path uses.
+
+    Because the wire contract is identical either way, promoting a module from
+    sandboxed to in-process (or demoting it) is a configuration change, never an
+    API change. That is the entire point of the hybrid model.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Cayrast.ModuleHost</RootNamespace>
+    <AssemblyName>Cayrast.ModuleHost</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cayrast.Abstractions\Cayrast.Abstractions.csproj" />
+    <ProjectReference Include="..\Cayrast.Sdk\Cayrast.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>

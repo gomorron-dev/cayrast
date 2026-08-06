@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Cayrast.Platform.Windows — every Win32 / WinRT call in the product.
+
+    This is the single home for interop. Global hotkeys, DWM backdrop and corner
+    styling, tray icon, Start Menu + UWP app enumeration, per-app audio sessions,
+    window management, DPAPI.
+
+    Each capability is exposed as an interface so Core can be unit tested against
+    a fake, and so a future non-Windows port has exactly one project to replace.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>Cayrast.Platform.Windows</RootNamespace>
+    <!-- Interop surfaces are inherently unsafe; contained to this project only. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cayrast.Abstractions\Cayrast.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

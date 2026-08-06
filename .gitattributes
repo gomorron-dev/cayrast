@@ -1,0 +1,35 @@
+# Normalise line endings so a contributor's autocrlf setting cannot produce
+# whole-file diffs. Text is stored as LF in the repository and checked out
+# natively; files Windows tooling requires as CRLF are pinned explicitly.
+
+* text=auto
+
+# Windows-native tooling that is unreliable with LF.
+*.sln       text eol=crlf
+*.slnx      text eol=crlf
+*.csproj    text eol=crlf
+*.props     text eol=crlf
+*.targets   text eol=crlf
+*.cmd       text eol=crlf
+*.bat       text eol=crlf
+*.ps1       text eol=crlf
+*.iss       text eol=crlf
+*.manifest  text eol=crlf
+
+# Must stay LF: shell scripts break with CRLF, and these run in CI containers.
+*.sh        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+
+# Binary — never diffed, never normalised.
+*.png       binary
+*.jpg       binary
+*.ico       binary
+*.woff      binary
+*.woff2     binary
+*.dll       binary
+*.exe       binary
+*.cayrast   binary
+
+# Collapse generated files in pull request diffs.
+package-lock.json  linguist-generated=true -diff

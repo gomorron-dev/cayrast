@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Cayrast.Sdk — the public surface third-party module authors compile against.
+
+    This ships as a NuGet package. Treat every public member as permanent:
+    breaking it breaks every module in the ecosystem. Additions are cheap,
+    removals are not.
+
+    Official modules reference this exact package and nothing more privileged.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Cayrast.Sdk</RootNamespace>
+    <IsPackable>true</IsPackable>
+    <PackageId>Cayrast.Sdk</PackageId>
+    <Description>SDK for building Cayrast modules (.cayrast packages).</Description>
+    <PackageTags>cayrast;plugin;module;sdk;launcher</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cayrast.Abstractions\Cayrast.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

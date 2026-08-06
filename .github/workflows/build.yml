@@ -1,0 +1,71 @@
+name: Build
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, development]
+  workflow_dispatch:
+
+# A newer push to the same branch makes an in-flight run obsolete.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and test
+    # Cayrast is a Windows application and targets net10.0-windows; it cannot be
+    # built or tested anywhere else.
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          # Sourced from global.json so CI and local machines can never disagree
+          # about the SDK version.
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/Directory.Packages.props', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore Cayrast.slnx
+
+      - name: Build
+        # No --no-restore ambiguity and no relaxed warnings: CI builds with
+        # warnings-as-errors on, which is the whole point of the policy.
+        run: dotnet build Cayrast.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test Cayrast.slnx --configuration Release --no-build --logger "trx;LogFileName=results.trx" --results-directory artifacts/test-results
+
+      - name: Upload test results
+        # Test results are most valuable precisely when the run failed.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: artifacts/test-results
+          retention-days: 14
+
+      - name: Publish shell
+        run: dotnet publish src/Cayrast.Shell/Cayrast.Shell.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/publish
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cayrast-win-x64
+          path: artifacts/publish
+          retention-days: 14

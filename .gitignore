@@ -1,0 +1,47 @@
+# Build output
+bin/
+obj/
+artifacts/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
+
+# Test + coverage
+TestResults/
+coverage/
+*.trx
+*.coverage
+
+# Installer output
+tools/Cayrast.Installer/Output/
+
+# Local developer overrides — never commit machine-specific settings
+*.local.json
+.env
+.env.local
+
+# Cayrast runtime data (only ever appears if someone runs from the repo root)
+/AppData/
+*.cayrast-backup
+
+# OS noise
+Thumbs.db
+desktop.ini
+.DS_Store

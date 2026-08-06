@@ -1,0 +1,77 @@
+name: Feature request
+description: Suggest a capability or improvement
+labels: ["enhancement", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check [the roadmap](../blob/main/docs/ROADMAP.md) first — it may
+        already be planned, and if so a comment there is more useful than a new issue.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: |
+        What are you trying to do that Cayrast makes hard or impossible today?
+
+        Lead with the problem rather than the solution. The best feature requests
+        describe a situation; understanding it often surfaces a better answer than
+        the one either of us started with.
+      placeholder: |
+        I keep several PuTTY sessions open and cannot tell them apart in the window
+        switcher, because they all share one title.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Suggested solution
+      description: What you have in mind, if you have something specific.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Launcher / search
+        - Commands
+        - Appearance / themes
+        - Settings
+        - A specific module
+        - A new module
+        - Plugin SDK
+        - Performance
+        - Accessibility
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you have considered
+      description: |
+        Including other tools that solve this well. Prior art is genuinely helpful —
+        knowing what already works saves us designing something worse.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else
+      description: Mockups, screenshots, or links.
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      description: |
+        Almost everything in Cayrast is a module, including the official ones. A
+        feature that does not need to live in the core usually ships sooner if it
+        does not.
+      options:
+        - label: I think this belongs in the core rather than in a module
+        - label: I would be interested in helping implement this

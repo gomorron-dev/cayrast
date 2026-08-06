@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Cayrast.Shell — the application entry point and composition root.
+
+    Owns the process: dependency injection wiring, the warm (pre-created, hidden)
+    launcher window, the WebView2 instance, the tray icon, and the bridge between
+    the web UI and Core.
+
+    WPF is used purely as a window host — there is no XAML view layer beyond the
+    window chrome. All UI lives in the WebView2 frontend under ui/shell.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Cayrast.Shell</RootNamespace>
+    <AssemblyName>Cayrast</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!--
+      No App.xaml: the entry point is a plain Program.Main so we control startup
+      ordering precisely (single-instance check must happen before any WPF or
+      WebView2 initialisation, which is expensive).
+    -->
+    <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cayrast.Core\Cayrast.Core.csproj" />
+    <ProjectReference Include="..\Cayrast.Platform.Windows\Cayrast.Platform.Windows.csproj" />
+    <ProjectReference Include="..\Cayrast.Sdk\Cayrast.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,60 @@
+<Project>
+
+  <!--
+    Cayrast — repository-wide build settings.
+
+    Every project in the solution inherits these. Project-specific settings belong
+    in the individual .csproj; anything that should be true everywhere belongs here.
+  -->
+
+  <PropertyGroup Label="Language">
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TargetFramework Condition="'$(TargetFramework)' == '' and '$(TargetFrameworks)' == ''">net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Quality">
+    <!--
+      Warnings are errors so the tree never accumulates rot. If a warning is
+      genuinely not actionable, suppress it explicitly with a justification
+      rather than lowering this bar. Set CayrastRelaxWarnings=true locally to
+      unblock exploratory work; CI always builds with it off.
+    -->
+    <TreatWarningsAsErrors Condition="'$(CayrastRelaxWarnings)' != 'true'">true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- CS1591: public members are documented as a policy, not a compiler mandate. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Branding">
+    <Product>Cayrast</Product>
+    <Company>Cayrast Contributors</Company>
+    <Authors>Cayrast Contributors</Authors>
+    <Copyright>Copyright (c) Cayrast Contributors</Copyright>
+    <PackageProjectUrl>https://github.com/cayrast/cayrast</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/cayrast/cayrast</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Versioning">
+    <!--
+      Single source of truth for the product version. The release workflow
+      overrides VersionPrefix/VersionSuffix from the pushed git tag.
+    -->
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionSuffix Condition="'$(VersionSuffix)' == ''">alpha</VersionSuffix>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Build">
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Keep the shipped layout flat and predictable for the installer. -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+
+</Project>

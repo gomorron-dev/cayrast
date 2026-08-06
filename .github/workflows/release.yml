@@ -1,0 +1,117 @@
+name: Release
+
+on:
+  push:
+    tags:
+      # Semantic version tags only, e.g. v1.0.0 or v1.0.0-beta.1
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build, without the leading v (e.g. 1.0.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and draft release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          # Tag pushes are the normal path; workflow_dispatch is the manual escape hatch.
+          if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+            $raw = '${{ inputs.version }}'
+          } else {
+            $raw = '${{ github.ref_name }}' -replace '^v', ''
+          }
+
+          # Split 1.2.3-beta.1 into VersionPrefix (1.2.3) and VersionSuffix (beta.1),
+          # which is the shape the .NET SDK expects.
+          $prefix, $suffix = $raw -split '-', 2
+          "prefix=$prefix"                          >> $env:GITHUB_OUTPUT
+          "suffix=$suffix"                          >> $env:GITHUB_OUTPUT
+          "full=$raw"                               >> $env:GITHUB_OUTPUT
+          "prerelease=$([bool]$suffix)".ToLower()   >> $env:GITHUB_OUTPUT
+          Write-Host "Building version $raw"
+
+      - name: Restore
+        run: dotnet restore Cayrast.slnx
+
+      - name: Build
+        run: dotnet build Cayrast.slnx --configuration Release --no-restore -p:VersionPrefix=${{ steps.version.outputs.prefix }} -p:VersionSuffix=${{ steps.version.outputs.suffix }}
+
+      - name: Test
+        # A tag that does not pass its own tests must never become a release.
+        run: dotnet test Cayrast.slnx --configuration Release --no-build
+
+      - name: Publish shell
+        run: dotnet publish src/Cayrast.Shell/Cayrast.Shell.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/publish -p:VersionPrefix=${{ steps.version.outputs.prefix }} -p:VersionSuffix=${{ steps.version.outputs.suffix }}
+
+      # Phase 4 adds the Inno Setup installer here. Until then a release ships the
+      # published output as an archive, which is honest about what exists rather
+      # than shipping an installer stub that pretends otherwise.
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts/release | Out-Null
+          $name = "Cayrast-${{ steps.version.outputs.full }}-win-x64.zip"
+          Compress-Archive -Path artifacts/publish/* -DestinationPath "artifacts/release/$name"
+
+          # Publish checksums with every release. Cayrast has no code-signing
+          # certificate yet, so this is the only integrity check users have.
+          Get-FileHash "artifacts/release/$name" -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  $name" } |
+            Out-File -FilePath artifacts/release/SHA256SUMS.txt -Encoding utf8
+
+          Get-Content artifacts/release/SHA256SUMS.txt
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          # Deliberately a draft. A maintainer reviews the artifacts and writes the
+          # notes before anything reaches users — releases are not something to
+          # publish automatically on a tag push.
+          draft: true
+          prerelease: ${{ steps.version.outputs.prerelease }}
+          name: Cayrast ${{ steps.version.outputs.full }}
+          tag_name: ${{ github.ref_name }}
+          files: |
+            artifacts/release/*.zip
+            artifacts/release/SHA256SUMS.txt
+          body: |
+            ## Cayrast ${{ steps.version.outputs.full }}
+
+            <!-- Summarise changes here before publishing. See CHANGELOG.md. -->
+
+            ### Verifying your download
+
+            Cayrast is not yet code-signed, so Windows SmartScreen will warn on first
+            run. Verify the archive against `SHA256SUMS.txt`:
+
+            ```powershell
+            Get-FileHash .\Cayrast-${{ steps.version.outputs.full }}-win-x64.zip -Algorithm SHA256
+            ```
+
+            ### Requirements
+
+            - Windows 10 (1809+) or Windows 11
+            - [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0)
+            - [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (preinstalled on Windows 11)

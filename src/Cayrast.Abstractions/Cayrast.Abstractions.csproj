@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Cayrast.Abstractions — the contracts, and nothing else.
+
+    Deliberately targets plain net10.0 with ZERO package references. Every other
+    assembly (host, SDK, modules, module host, tests) depends on this one, so it
+    must stay small, stable, and free of platform or framework opinions.
+
+    Rule: if it needs a dependency, it does not belong here.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Cayrast.Abstractions</RootNamespace>
+  </PropertyGroup>
+
+</Project>

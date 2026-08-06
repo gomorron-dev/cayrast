@@ -1,0 +1,27 @@
+version: 2
+
+updates:
+  # NuGet. Versions are centralised in Directory.Packages.props, so Dependabot
+  # edits one file rather than opening a PR per project.
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Test tooling moves in lockstep and is low risk; one PR instead of four.
+      test-dependencies:
+        patterns:
+          - "xunit*"
+          - "Microsoft.NET.Test.Sdk"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+
+  # Enabled once the Vite frontend lands in Phase 1.
+  # - package-ecosystem: npm
+  #   directory: "/ui/shell"
+  #   schedule:
+  #     interval: weekly

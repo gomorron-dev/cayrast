@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Cayrast.Abstractions/Cayrast.Abstractions.csproj" />
+    <Project Path="src/Cayrast.Core/Cayrast.Core.csproj" />
+    <Project Path="src/Cayrast.ModuleHost/Cayrast.ModuleHost.csproj" />
+    <Project Path="src/Cayrast.Platform.Windows/Cayrast.Platform.Windows.csproj" />
+    <Project Path="src/Cayrast.Sdk/Cayrast.Sdk.csproj" />
+    <Project Path="src/Cayrast.Shell/Cayrast.Shell.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Cayrast.Core.Tests/Cayrast.Core.Tests.csproj" />
+  </Folder>
+</Solution>

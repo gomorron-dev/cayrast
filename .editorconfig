@@ -1,0 +1,88 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,yml,yaml,md,ts,js,svelte,css,html}]
+indent_size = 2
+
+[*.{csproj,props,targets}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cs]
+# --- Namespaces and usings ---
+csharp_style_namespace_declarations = file_scoped:warning
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+# --- Expression preferences ---
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_prefer_braces = true:warning
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+
+# --- Modifiers ---
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+csharp_prefer_static_local_function = true:warning
+dotnet_style_readonly_field = true:warning
+
+# --- Naming: interfaces must start with I ---
+dotnet_naming_rule.interfaces_start_with_i.severity = warning
+dotnet_naming_rule.interfaces_start_with_i.symbols = interface_symbols
+dotnet_naming_rule.interfaces_start_with_i.style = prefix_with_i
+dotnet_naming_symbols.interface_symbols.applicable_kinds = interface
+dotnet_naming_style.prefix_with_i.required_prefix = I
+dotnet_naming_style.prefix_with_i.capitalization = pascal_case
+
+# --- Naming: private fields use _camelCase ---
+dotnet_naming_rule.private_fields_underscore.severity = warning
+dotnet_naming_rule.private_fields_underscore.symbols = private_field_symbols
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel
+dotnet_naming_symbols.private_field_symbols.applicable_kinds = field
+dotnet_naming_symbols.private_field_symbols.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel.required_prefix = _
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+
+# --- Deliberately disabled analyzer rules ---
+# Each of these is switched off for a stated reason, not for convenience. Anything
+# not listed here stays an error; see TreatWarningsAsErrors in Directory.Build.props.
+
+# CA2007 — require ConfigureAwait(false).
+# Applies to libraries consumed by unknown synchronisation contexts. Cayrast is an
+# application that owns its own context, so this would be pure ceremony.
+dotnet_diagnostic.CA2007.severity = none
+
+# CA1711 — types must not end in reserved suffixes such as 'Permission'.
+# The suffix is reserved for subclasses of CodeAccessPermission, which no longer
+# exists: Code Access Security was removed in .NET Core. ModulePermission is the
+# clearest possible name for what it is.
+dotnet_diagnostic.CA1711.severity = none
+
+# CA1720 — identifiers must not contain a type name.
+# Aimed at Hungarian-style parameter names. Our SettingKind members describe the
+# kind of value a setting holds, so Integer, Text, and Color are exactly right.
+dotnet_diagnostic.CA1720.severity = none
+
+# CA1716 — members must not use names reserved in other .NET languages.
+# Trips on IModuleLogger.Error because 'Error' is a Visual Basic keyword. Every
+# logging API in the ecosystem names this method Error; diverging to satisfy a
+# language no module author is going to use would make our SDK the odd one out.
+dotnet_diagnostic.CA1716.severity = none
+
+# IDE style rules stay advisory so formatting nits never break the build;
+# real correctness analyzers (CA*) remain errors via TreatWarningsAsErrors.
+dotnet_analyzer_diagnostic.category-Style.severity = suggestion
+
+[tests/**/*.cs]
+# Tests legitimately use public members without docs and odd naming for readability.
+dotnet_diagnostic.CA1707.severity = none
