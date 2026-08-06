@@ -1,0 +1,194 @@
+using System.Text.Json;
+using System.Windows;
+using Cayrast.Abstractions;
+using Cayrast.Abstractions.Input;
+using Cayrast.Abstractions.Platform;
+using Cayrast.Core.Settings;
+using Cayrast.Platform.Windows;
+using Cayrast.Shell.Bridge;
+using Microsoft.Extensions.Logging;
+
+namespace Cayrast.Shell;
+
+/// <summary>
+/// Wires the application together and owns its lifetime.
+/// </summary>
+/// <remarks>
+/// Startup order is deliberate and load-bearing:
+/// <list type="number">
+///   <item>Settings load first — everything else reads them.</item>
+///   <item>Bridge channels register before the frontend can call them, otherwise the
+///   UI's first request races against handler registration.</item>
+///   <item>The window warms up, paying the WebView2 construction cost once.</item>
+///   <item>The hotkey registers last, so it cannot fire before there is a window to show.</item>
+/// </list>
+/// </remarks>
+public sealed class CayrastHost(
+    ISettingsService settings,
+    IHotkeyService hotkeys,
+    ITrayIconService trayIcon,
+    SingleInstance singleInstance,
+    WebMessageBridge bridge,
+    LauncherWindow window,
+    ILogger<CayrastHost> logger) : IAsyncDisposable
+{
+    private const string LauncherHotkeyId = "launcher.toggle";
+
+    /// <summary>Runs the full startup sequence.</summary>
+    public async Task StartAsync(CancellationToken cancellationToken = default)
+    {
+        await settings.LoadAsync(cancellationToken);
+
+        RegisterBridgeChannels();
+        ListenForSecondInstance();
+
+        await window.WarmUpAsync(cancellationToken);
+
+        RegisterHotkey();
+        ShowTrayIcon();
+
+        settings.Changed += OnSettingsChanged;
+        logger.LogInformation("{Product} started.", CayrastBrand.ProductName);
+    }
+
+    private void RegisterBridgeChannels()
+    {
+        bridge.Register("app.info", (_, _) => Task.FromResult<object?>(new
+        {
+            product = CayrastBrand.ProductName,
+            version = typeof(CayrastHost).Assembly.GetName().Version?.ToString() ?? "0.0.0",
+            os = Environment.OSVersion.VersionString,
+        }));
+
+        bridge.Register("app.hide", (_, _) =>
+        {
+            // Bridge handlers arrive on a WebView callback, not the UI thread, so any
+            // window operation must be marshalled back to the dispatcher.
+            window.Dispatcher.Invoke(window.HideLauncher);
+            return Task.FromResult<object?>(null);
+        });
+
+        bridge.Register("settings.get", (_, _) => Task.FromResult<object?>(settings.Current));
+
+        bridge.Register("settings.set", async (payload, token) =>
+        {
+            if (payload is null)
+            {
+                return null;
+            }
+
+            var updated = payload.Value.Deserialize<CayrastSettings>(BridgeJsonOptions.Default);
+            if (updated is null)
+            {
+                return null;
+            }
+
+            await settings.UpdateAsync(_ => updated, token);
+            return settings.Current;
+        });
+
+        // Phase 2 replaces this with the real search pipeline. It answers now so the
+        // frontend can be built and tested against a real channel rather than a mock.
+        bridge.Register("search.query", (_, _) => Task.FromResult<object?>(new { results = Array.Empty<object>() }));
+    }
+
+    private void ListenForSecondInstance() =>
+        singleInstance.OnActivationRequested(() =>
+        {
+            logger.LogInformation("A second launch requested activation.");
+
+            // The callback arrives on a thread-pool thread; window operations must
+            // be marshalled to the dispatcher.
+            window.Dispatcher.Invoke(window.ShowLauncher);
+        });
+
+    private void RegisterHotkey()
+    {
+        var configured = settings.Current.Behavior.Hotkey;
+
+        if (!HotkeyBinding.TryParse(configured, out var binding))
+        {
+            logger.LogWarning("Hotkey '{Configured}' could not be parsed; falling back to {Default}.",
+                configured, HotkeyBinding.Default);
+            binding = HotkeyBinding.Default;
+        }
+
+        if (hotkeys.TryRegister(LauncherHotkeyId, binding, () => window.ToggleLauncher()))
+        {
+            return;
+        }
+
+        // Registration failing is normal — another application may own the
+        // combination. The launcher still works from the tray, so this is a warning
+        // the user needs to see rather than a fatal error.
+        logger.LogWarning(
+            "Could not register {Binding}. Another application is using it. Use the tray icon, or choose a different hotkey in settings.",
+            binding);
+    }
+
+    private void ShowTrayIcon()
+    {
+        if (!settings.Current.Behavior.ShowTrayIcon)
+        {
+            logger.LogInformation("Tray icon suppressed by settings (hidden mode).");
+            return;
+        }
+
+        trayIcon.Activated += (_, _) => window.Dispatcher.Invoke(window.ShowLauncher);
+        trayIcon.MenuItemInvoked += OnTrayMenuItemInvoked;
+
+        trayIcon.Show(CayrastBrand.ProductName,
+        [
+            ("show", $"Open {CayrastBrand.ProductName}"),
+            ("settings", "Settings"),
+            ("separator", string.Empty),
+            ("quit", "Quit"),
+        ]);
+    }
+
+    private void OnTrayMenuItemInvoked(object? sender, string id)
+    {
+        switch (id)
+        {
+            case "show":
+                window.Dispatcher.Invoke(window.ShowLauncher);
+                break;
+
+            case "settings":
+                window.Dispatcher.Invoke(() =>
+                {
+                    window.ShowLauncher();
+                    bridge.PublishEvent("navigate", new { view = "settings" });
+                });
+                break;
+
+            case "quit":
+                window.Dispatcher.Invoke(() => Application.Current.Shutdown());
+                break;
+        }
+    }
+
+    private void OnSettingsChanged(object? sender, CayrastSettings updated)
+    {
+        window.Dispatcher.Invoke(window.ApplyAppearance);
+
+        // Tell the frontend too: theme, accent, and layout all live in CSS variables
+        // the UI derives from settings, so it needs to know without polling.
+        bridge.PublishEvent("settings.changed", updated);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        settings.Changed -= OnSettingsChanged;
+        hotkeys.Unregister(LauncherHotkeyId);
+        trayIcon.Hide();
+
+        // Flush before exit so a debounced settings change is not lost.
+        await settings.FlushAsync(CancellationToken.None);
+
+        // Releases the out-of-process browser; without this it can outlive us.
+        window.Dispose();
+        logger.LogInformation("{Product} stopped.", CayrastBrand.ProductName);
+    }
+}

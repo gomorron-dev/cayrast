@@ -64,6 +64,11 @@ Cayrast's core promise is that Alt+Space is instant. Two rules follow:
 1. **Anything on the search path must be cancellable and must honour its token.**
    It gets cancelled roughly every 100 ms during typing.
 2. **Anything on the startup path delays login.** Defer it, or make it lazy.
+3. **Do not log per keystroke.** Log lifecycle and errors, not query progress. The
+   analyzer rules that would normally police this (CA1848, CA1873) are disabled
+   project-wide because they are pure ceremony everywhere else — which makes this
+   convention the only thing protecting the hot path. If you genuinely need logging
+   there, use a `[LoggerMessage]` source-generated delegate at that call site.
 
 ### Tests
 

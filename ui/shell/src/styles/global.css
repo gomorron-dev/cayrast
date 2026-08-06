@@ -1,0 +1,92 @@
+@import './theme.css';
+
+/*
+ * Global resets and the panel chrome.
+ *
+ * The page background stays fully transparent: the visible surface is the DWM
+ * Acrylic backdrop applied to the native window, showing through the WebView.
+ * Painting an opaque background anywhere up the tree would hide it.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+
+  font-family: var(--cy-font);
+  color: var(--cy-fg-primary);
+
+  /* Matches the surrounding Windows UI rather than the browser default. */
+  -webkit-font-smoothing: antialiased;
+  font-synthesis: none;
+}
+
+body {
+  /*
+   * This is an application surface. Text selection, the browser context menu, and
+   * overscroll bounce all break the illusion that it is native.
+   */
+  user-select: none;
+  overscroll-behavior: none;
+  cursor: default;
+}
+
+#app {
+  height: 100%;
+}
+
+/* Focus rings must never be removed outright — keyboard users navigate by them. */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cy-accent);
+  outline-offset: 2px;
+  border-radius: var(--cy-radius-chip);
+}
+
+/* ------------------------------------------------------------------ Scrollbar */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--cy-fg-tertiary);
+  border-radius: 4px;
+
+  /* Inset from the panel edge so it does not collide with the rounded corner. */
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cy-fg-secondary);
+  background-clip: content-box;
+}
+
+/* ------------------------------------------------------------ Screen readers */
+
+.cy-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

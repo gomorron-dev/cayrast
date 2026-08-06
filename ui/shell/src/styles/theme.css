@@ -1,0 +1,139 @@
+/*
+ * Cayrast theme tokens.
+ *
+ * Every colour, size, and timing the interface uses is declared here as a custom
+ * property. Nothing else in the codebase hard-codes a visual value.
+ *
+ * This indirection is what makes the theme system work: a .cayrast-theme package
+ * simply overrides a subset of these variables at runtime, with no rebuild and no
+ * restart. It also means the host can push a settings change — accent colour,
+ * corner radius, animation speed — straight into CSS without the UI re-rendering.
+ *
+ * Naming: --cy-<category>-<role>. Keep it, so theme authors can guess a token name
+ * and be right.
+ */
+
+:root {
+  /* ---------------------------------------------------------------- Accent */
+  /* Overridden at runtime from settings; this is the project default. */
+  --cy-accent: #8d8473;
+
+  /*
+   * Derived from --cy-accent rather than stated literally, so a theme or a user's
+   * custom accent only has to set one colour and the rest stay in relation to it.
+   */
+  --cy-accent-hover: color-mix(in srgb, var(--cy-accent) 82%, white);
+  --cy-accent-muted: color-mix(in srgb, var(--cy-accent) 18%, transparent);
+  --cy-accent-contrast: #ffffff;
+
+  /* ---------------------------------------------------------------- Radius */
+  --cy-radius-panel: 12px;
+  --cy-radius-row: 8px;
+  --cy-radius-chip: 6px;
+
+  /* ---------------------------------------------------------------- Spacing */
+  --cy-space-1: 4px;
+  --cy-space-2: 8px;
+  --cy-space-3: 12px;
+  --cy-space-4: 16px;
+  --cy-space-5: 24px;
+
+  /* ---------------------------------------------------------------- Type */
+  /*
+   * Segoe UI Variable is the Windows 11 system face and is what makes the UI read
+   * as native rather than as a web page in a frame.
+   */
+  --cy-font: 'Segoe UI Variable Display', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --cy-font-mono: 'Cascadia Code', 'Consolas', ui-monospace, monospace;
+
+  --cy-text-query: 20px;
+  --cy-text-title: 14px;
+  --cy-text-subtitle: 12px;
+  --cy-text-label: 11px;
+
+  /* ---------------------------------------------------------------- Motion */
+  /*
+   * --cy-motion-scale is set from settings and multiplies every duration, so the
+   * animation-speed slider and "disable animations" both work by changing one
+   * number rather than by toggling rules throughout the stylesheet.
+   */
+  --cy-motion-scale: 1;
+  --cy-duration-fast: calc(120ms * var(--cy-motion-scale));
+  --cy-duration-normal: calc(180ms * var(--cy-motion-scale));
+
+  /* Gentle deceleration; nothing overshoots or bounces. */
+  --cy-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ---------------------------------------------------------------- Layout */
+  --cy-row-height: 52px;
+  --cy-icon-size: 28px;
+}
+
+/* -------------------------------------------------------------------- Dark */
+/*
+ * Dark is the default because the launcher is an overlay that appears over whatever
+ * the user is already doing, and a bright panel over a dark desktop is jarring.
+ * The host sets data-theme explicitly; this is the fallback before it does.
+ */
+:root,
+:root[data-theme='dark'] {
+  --cy-bg-panel: rgba(32, 32, 34, 0.72);
+  --cy-bg-input: transparent;
+  --cy-bg-row-hover: rgba(255, 255, 255, 0.06);
+  --cy-bg-row-selected: rgba(255, 255, 255, 0.1);
+  --cy-bg-chip: rgba(255, 255, 255, 0.08);
+
+  --cy-fg-primary: rgba(255, 255, 255, 0.92);
+  --cy-fg-secondary: rgba(255, 255, 255, 0.55);
+  --cy-fg-tertiary: rgba(255, 255, 255, 0.38);
+
+  --cy-border-panel: rgba(255, 255, 255, 0.08);
+  --cy-border-divider: rgba(255, 255, 255, 0.06);
+
+  --cy-shadow-panel: 0 16px 48px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* ------------------------------------------------------------------- Light */
+:root[data-theme='light'] {
+  --cy-bg-panel: rgba(250, 250, 250, 0.76);
+  --cy-bg-input: transparent;
+  --cy-bg-row-hover: rgba(0, 0, 0, 0.04);
+  --cy-bg-row-selected: rgba(0, 0, 0, 0.07);
+  --cy-bg-chip: rgba(0, 0, 0, 0.06);
+
+  --cy-fg-primary: rgba(0, 0, 0, 0.9);
+  --cy-fg-secondary: rgba(0, 0, 0, 0.55);
+  --cy-fg-tertiary: rgba(0, 0, 0, 0.4);
+
+  --cy-border-panel: rgba(0, 0, 0, 0.08);
+  --cy-border-divider: rgba(0, 0, 0, 0.06);
+
+  --cy-shadow-panel: 0 16px 48px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* --------------------------------------------------------- High contrast */
+/*
+ * Windows high-contrast themes exist because a user cannot read our normal palette.
+ * Honouring system colours here is not decoration — overriding them with our own
+ * would make the launcher unusable for exactly the people who enabled it.
+ */
+@media (forced-colors: active) {
+  :root {
+    --cy-bg-panel: Canvas;
+    --cy-bg-row-hover: Highlight;
+    --cy-bg-row-selected: Highlight;
+    --cy-fg-primary: CanvasText;
+    --cy-fg-secondary: CanvasText;
+    --cy-fg-tertiary: GrayText;
+    --cy-accent: Highlight;
+    --cy-border-panel: CanvasText;
+    --cy-shadow-panel: none;
+  }
+}
+
+/* ------------------------------------------------------------ Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --cy-motion-scale: 0;
+  }
+}

@@ -3,7 +3,7 @@
 Cayrast is built in five phases. Each ends at a tree that **builds, runs, and is
 demoable** — no phase leaves the repository in a broken intermediate state.
 
-**Current phase: 1 (Skeleton) — in progress.**
+**Current phase: 2 (Engines) — in progress.**
 
 ---
 
@@ -18,24 +18,33 @@ demoable** — no phase leaves the repository in a broken intermediate state.
 
 ---
 
-## Phase 1 — Skeleton 🔨 in progress
+## Phase 1 — Skeleton ✅ complete
 
 The application launches and responds to the hotkey.
 
-- [ ] Composition root with `Microsoft.Extensions.DependencyInjection`
-- [ ] Serilog structured logging to `%LOCALAPPDATA%\Cayrast\Logs`
-- [ ] Single-instance enforcement (named mutex; second launch signals the first)
-- [ ] Warm window: hidden WPF host created at startup, Mica/Acrylic backdrop, rounded corners
-- [ ] WebView2 on `https://shell.cayrast.local/` via virtual host mapping
-- [ ] Typed message bridge between the shell UI and Core
-- [ ] Global hotkey (default **Alt+Space**), rebindable, with a graceful message if taken
-- [ ] Tray icon with show/settings/quit
-- [ ] Settings: typed JSON model, schema version, migration, atomic save
-- [ ] Svelte 5 + Vite frontend scaffold with the theme variable system
-- [ ] Multi-monitor and per-monitor DPI correctness
+- [x] Composition root with `Microsoft.Extensions.DependencyInjection`
+- [x] Serilog structured logging to `%LOCALAPPDATA%\Cayrast\Logs`
+- [x] Single-instance enforcement, with a second launch activating the first
+- [x] Warm window: hidden WPF host created at startup, Acrylic backdrop, rounded corners
+- [x] WebView2 on `https://shell.cayrast.local/` via virtual host mapping
+- [x] Typed message bridge between the shell UI and Core, over `IpcEnvelope`
+- [x] Global hotkey (default **Alt+Space**), rebindable, graceful when already taken
+- [x] Tray icon with show/settings/quit, surviving an Explorer restart
+- [x] Settings: typed JSON, schema version, migration, atomic save, corruption recovery
+- [x] Svelte 5 + Vite frontend with the theme variable system
+- [x] Multi-monitor and per-monitor DPI positioning in device pixels
+- [x] Job object so WebView2 children never outlive the shell
 
-**Done when:** Alt+Space shows the window with no perceptible delay, Esc hides it,
-settings survive a restart, and nothing is logged at error level on a clean run.
+**Verified:** launches clean with no errors logged, registers Alt+Space, positions
+itself on the active monitor, activates on a second launch, hides on focus loss, and
+leaves zero orphaned processes after a simulated crash. 85 tests passing.
+
+Three bugs were found and fixed during verification, each recorded in
+[ARCHITECTURE.md](ARCHITECTURE.md) because each is a trap worth not re-entering:
+broadcast messages never reach a message-only window; a spurious deactivation during
+foreground handover hides the window in the frame it appears; and deserialised
+settings need explicit normalisation because neither nullability nor property
+initialisers survive JSON reliably.
 
 ---
 

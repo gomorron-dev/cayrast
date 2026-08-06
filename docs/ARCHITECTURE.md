@@ -58,11 +58,39 @@ cold WebView2 construction.
 becomes a first-class concern rather than an afterthought. In exchange we get a
 latency budget for Alt+Space measured in the time it takes to call `ShowWindow`.
 
+**Measured, as of Phase 1** (Windows 11 26200, Debug build):
+
+| | |
+|---|---|
+| Cold start to ready | ~1.9 s |
+| Shell working set, idle | ~104 MB |
+| WebView2 child processes | 6 |
+
+The working set is **above** where it should be and is a tracked Phase 5 item. It is
+recorded here rather than quietly omitted: a resident launcher that costs more memory
+than the tools it replaces has not earned its place, and a Debug build with source
+maps is not an excuse for the final number.
+
 **Consequences to respect.**
 
 - Idle working set is a budget, not a statistic. Trim aggressively when hidden.
 - State must reset on show — a stale query from twenty minutes ago is a bug.
 - Anything expensive at startup delays login, so it must be deferred or lazy.
+- **The window must survive being shown before it is focused.** Windows can report a
+  spurious deactivation mid-handover; acting on it hides the launcher in the frame it
+  appeared. `LauncherWindow` guards this with a short activation grace period, found
+  by testing rather than by reasoning.
+
+### Keeping child processes from outliving us
+
+WebView2 runs the browser out of process. On a clean exit it reaps its children; on a
+crash or a force-kill it does not, and each orphan holds tens of megabytes. For a
+process that is resident all day and restarted on every update, those accumulate.
+
+`ChildProcessJob` assigns the shell to a Windows job object with
+`KILL_ON_JOB_CLOSE`, which makes the kernel guarantee the cleanup — when our last
+handle closes, for any reason including SIGKILL, every child dies with us. Verified by
+force-killing the shell and confirming the child count returns to baseline.
 
 ---
 
@@ -170,6 +198,24 @@ Populate `Keywords` generously. It is what lets someone find the transparency sl
 by typing "glass" or "acrylic" instead of the label a developer happened to pick.
 
 ---
+
+## 5a. Settings are normalised, not merely deserialised
+
+Every settings tree passes through `CayrastSettings.Normalized()` on load *and* on
+update. This is not defensive padding — it fixes two behaviours confirmed by test:
+
+1. **An explicit `null` in the file overwrites a non-nullable property.** The
+   serialiser does not honour C# nullability, so a hand-edited `"accentColor": null`
+   produces a null string and a crash far from the file that caused it.
+2. **Absent properties do not reliably keep their initialisers.** Whether they do
+   differs between the reflection serialiser and the source generator, which makes
+   correctness depend on which one is in use.
+
+Normalisation also clamps. Settings files are *meant* to be hand-edited, and a
+transparency of `5.0` or a panel width of `-100` would otherwise yield an invisible or
+unusable window with no clue why. Zero animation speed is deliberately allowed — that
+is how animation is turned off — while zero transparency is not, because an invisible
+launcher cannot be found or dismissed.
 
 ## 6. Storage
 

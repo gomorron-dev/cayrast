@@ -32,4 +32,36 @@
     <ProjectReference Include="..\Cayrast.Sdk\Cayrast.Sdk.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Sinks.File" />
+  </ItemGroup>
+
+  <!--
+    Copies the built Svelte frontend into the output as ui\, which is where
+    UiAssets.ResolveRoot looks first.
+
+    Deliberately does NOT run `npm run build` itself. Invoking npm from MSBuild would
+    put a Node install on the critical path of every C# build, including on machines
+    that only touch the backend, and would make incremental builds unpredictable.
+    Instead the frontend is built explicitly (see CONTRIBUTING.md) and this target
+    copies whatever is there — falling back to the repository layout during
+    development, so `dotnet run` works without a copy step.
+  -->
+  <Target Name="CopyFrontend" AfterTargets="Build">
+    <ItemGroup>
+      <FrontendFiles Include="$(MSBuildThisFileDirectory)..\..\ui\shell\dist\**\*.*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(FrontendFiles)"
+          DestinationFolder="$(OutDir)ui\%(RecursiveDir)"
+          SkipUnchangedFiles="true"
+          Condition="'@(FrontendFiles)' != ''" />
+
+    <Warning Condition="'@(FrontendFiles)' == ''"
+             Text="The Cayrast frontend has not been built. Run 'npm install &amp;&amp; npm run build' in ui/shell, or the launcher will start with no interface." />
+  </Target>
+
 </Project>

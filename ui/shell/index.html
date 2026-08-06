@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      The shell is served from https://shell.cayrast.local/, a real origin, so a
+      Content-Security-Policy actually applies. It is restrictive on purpose: this
+      window hosts third-party module UIs, and the shell frame itself must never be
+      able to load remote code or exfiltrate anything.
+
+      - default-src 'self'    nothing loads from outside this origin
+      - connect-src 'none'    the UI has no network access; it talks to the host over
+                              the WebView2 message bridge, which CSP does not govern,
+                              so any fetch() at all would be a bug or an attack
+      - frame-src             module UIs get their own origins under *.cayrast.local
+      - style-src includes 'unsafe-inline' because themes work by setting CSS custom
+        properties inline; that is the mechanism, not an oversight
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self';
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' data: blob:;
+        font-src 'self' data:;
+        connect-src 'none';
+        frame-src https://*.cayrast.local;
+        object-src 'none';
+        base-uri 'none';
+        form-action 'none';
+      "
+    />
+
+    <title>Cayrast</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

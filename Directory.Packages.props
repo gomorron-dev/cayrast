@@ -1,28 +1,79 @@
 <Project>
+
   <!--
     Central Package Management.
 
-    All NuGet versions are declared here, once. Projects reference packages
-    with <PackageReference Include="..." /> and no Version attribute, which
-    makes version drift between projects impossible.
+    All NuGet versions are declared here, once. Projects reference packages with
+    <PackageReference Include="..." /> and no Version attribute, which makes version
+    drift between projects impossible.
 
-    Add packages with:  dotnet add <project> package <name>
-    (the SDK writes the version into this file automatically)
+    Transitive pinning is on, so an indirect dependency can be forced to a specific
+    version from here without taking a direct reference on it. That is how the
+    SQLite security pin below works.
+
+    Edit this file by hand. Running several `dotnet add package` commands in parallel
+    races on it and can truncate it.
   -->
+
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+    <!--
+      Treat vulnerable packages as build failures, including transitive ones.
+      This is deliberately strict: Cayrast loads third-party modules and reads
+      untrusted files, so shipping a known-vulnerable dependency is not a warning.
+    -->
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>low</NuGetAuditLevel>
   </PropertyGroup>
-  <ItemGroup Label="Runtime">
-    <!-- Populated in Phase 1: WebView2, Microsoft.Extensions.*, Serilog, Sqlite, CsWin32. -->
+
+  <ItemGroup Label="Hosting and infrastructure">
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
+  </ItemGroup>
+
+  <ItemGroup Label="Logging">
+    <PackageVersion Include="Serilog.Extensions.Hosting" Version="10.0.0" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="UI">
+    <!--
+      Kept aligned with the shipping Evergreen WebView2 Runtime. The SDK only needs
+      to be no newer than the installed runtime; pinning near it avoids calling APIs
+      that are missing on user machines.
+    -->
+    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.4129.50" />
+  </ItemGroup>
+
+  <ItemGroup Label="Storage">
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.10" />
+    <!--
+      SECURITY PIN — do not remove without re-checking the advisory.
+
+      Microsoft.Data.Sqlite 10.0.10 resolves SQLitePCLRaw.lib.e_sqlite3 2.1.11, which
+      carries a high-severity SQLite vulnerability (GHSA-2m69-gcr7-jv3q). This forces
+      the patched 2.1.12 instead.
+
+      Pinning only lib.e_sqlite3 is deliberate. That package contains just the native
+      SQLite binary and exposes no managed API, so moving it forward cannot break
+      Microsoft.Data.Sqlite's compile-time contract. The managed SQLitePCLRaw packages
+      (core, bundle, provider) have since moved to a 3.0.x line with a different API
+      surface, and dragging those forward under a 2.1.x-compiled consumer would risk a
+      runtime failure to buy nothing extra.
+    -->
+    <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.12" />
   </ItemGroup>
 
   <ItemGroup Label="Testing">
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageVersion>
-    <PackageVersion Include="xunit.v3" Version="3.2.2" />
   </ItemGroup>
+
 </Project>

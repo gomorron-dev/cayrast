@@ -73,6 +73,19 @@ dotnet_diagnostic.CA1711.severity = none
 # kind of value a setting holds, so Integer, Text, and Color are exactly right.
 dotnet_diagnostic.CA1720.severity = none
 
+# CA1848 — use LoggerMessage delegates instead of ILogger extension methods.
+# CA1873 — a log argument may be expensive to evaluate if logging is disabled.
+# Both exist for high-throughput server code where logging sits inside the request
+# path. Cayrast logs startup, lifecycle, and errors — not loops. Applying the
+# LoggerMessage source generator to every call site would add hundreds of partial
+# method declarations to buy allocations we never make.
+#
+# What the rules genuinely protect is preserved by convention instead: nothing on
+# the search path logs per keystroke. See CONTRIBUTING.md, "Performance is a
+# feature". If a hot path ever needs logging, use [LoggerMessage] there explicitly.
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA1873.severity = none
+
 # CA1716 — members must not use names reserved in other .NET languages.
 # Trips on IModuleLogger.Error because 'Error' is a Visual Basic keyword. Every
 # logging API in the ecosystem names this method Error; diverging to satisfy a
