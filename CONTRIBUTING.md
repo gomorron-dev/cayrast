@@ -19,7 +19,7 @@ Requirements: [.NET 10 SDK](https://dotnet.microsoft.com/download) (10.0.302+),
 [Node.js](https://nodejs.org/) 20+, and Windows 10 1809 or later.
 
 ```bash
-git clone https://github.com/cayrast/cayrast.git
+git clone https://github.com/gomorron-dev/cayrast.git
 ```
 
 ```bash

@@ -92,4 +92,4 @@ The application launches, registers its hotkey, and shows a window.
 - Documentation: README, architecture, roadmap, contributing, security, code of conduct
 - CI: build and test on Windows; release workflow triggered by version tags
 
-[Unreleased]: https://github.com/cayrast/cayrast/commits/main
+[Unreleased]: https://github.com/gomorron-dev/cayrast/commits/main

@@ -1,0 +1,38 @@
+<svg width="360" height="96" viewBox="0 0 360 96" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cayrast">
+  <title>Cayrast</title>
+
+  <!--
+    The full lockup: mark plus wordmark.
+
+    The wordmark is set in a font stack rather than converted to paths, which keeps
+    this file editable and small. The tradeoff is real: without Segoe UI Variable
+    the wordmark falls back to whatever the viewer has, so it is not pixel-identical
+    everywhere. That is acceptable for a README and a docs header. Convert it to
+    outlines before using it anywhere the exact letterforms matter - an installer
+    banner, a store listing, or print.
+  -->
+
+  <defs>
+    <linearGradient id="cayrast-logo-panel" x1="0" y1="0" x2="96" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9d947f" />
+      <stop offset="1" stop-color="#6f685a" />
+    </linearGradient>
+  </defs>
+
+  <rect width="96" height="96" rx="24" fill="url(#cayrast-logo-panel)" />
+
+  <g stroke="#faf9f7" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M30 34 L45 48 L30 62" />
+    <path d="M53 62 L68 62" />
+  </g>
+
+  <!-- currentColor so the wordmark inverts with the surrounding theme. -->
+  <text
+    x="124"
+    y="62"
+    font-family="Segoe UI Variable Display, Segoe UI, system-ui, -apple-system, sans-serif"
+    font-size="42"
+    font-weight="600"
+    letter-spacing="-0.5"
+    fill="currentColor">Cayrast</text>
+</svg>

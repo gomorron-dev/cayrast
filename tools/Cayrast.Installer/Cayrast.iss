@@ -16,7 +16,7 @@
 
 #define AppName "Cayrast"
 #define AppPublisher "Cayrast Contributors"
-#define AppUrl "https://github.com/cayrast/cayrast"
+#define AppUrl "https://github.com/gomorron-dev/cayrast"
 #define AppExeName "Cayrast.exe"
 
 [Setup]

@@ -177,5 +177,5 @@ file paths.
 If Cayrast fails to start it shows the reason and the log location rather than
 disappearing silently.
 
-Bug reports go to [GitHub issues](https://github.com/cayrast/cayrast/issues). Security
+Bug reports go to [GitHub issues](https://github.com/gomorron-dev/cayrast/issues). Security
 issues should go through [private reporting](../SECURITY.md) instead.

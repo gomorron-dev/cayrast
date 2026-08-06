@@ -34,8 +34,8 @@
     <Company>Cayrast Contributors</Company>
     <Authors>Cayrast Contributors</Authors>
     <Copyright>Copyright (c) Cayrast Contributors</Copyright>
-    <PackageProjectUrl>https://github.com/cayrast/cayrast</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/cayrast/cayrast</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/gomorron-dev/cayrast</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/gomorron-dev/cayrast</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
