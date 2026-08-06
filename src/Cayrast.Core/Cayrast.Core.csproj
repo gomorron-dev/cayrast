@@ -21,9 +21,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
+
+  <!--
+    Microsoft.Data.Sqlite is deliberately NOT referenced yet. The frecency store is a
+    few hundred key/value pairs read wholly into memory, which a JSON file handles
+    without a schema, a migration story, or a native dependency. SQLite returns in
+    Phase 3 for the clipboard, which genuinely needs indexed queries over blobs — its
+    version and security pin are already recorded in Directory.Packages.props.
+  -->
 
 </Project>

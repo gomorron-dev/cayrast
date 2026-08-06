@@ -9,5 +9,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Cayrast.Core.Tests/Cayrast.Core.Tests.csproj" />
+    <Project Path="tests/Cayrast.Integration.Tests/Cayrast.Integration.Tests.csproj" />
   </Folder>
 </Solution>

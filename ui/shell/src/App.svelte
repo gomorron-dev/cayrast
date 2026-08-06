@@ -3,15 +3,16 @@
   import { applyTheme, watchSystemTheme } from './lib/theme';
   import SearchInput from './components/SearchInput.svelte';
   import ResultList from './components/ResultList.svelte';
+  import OutputPanel from './components/OutputPanel.svelte';
 
   let searchInput = $state<ReturnType<typeof SearchInput> | null>(null);
 
   $effect(() => {
     void app.initialise();
 
-    // Windows can switch between light and dark while Cayrast is resident for days
-    // at a time. Following that live is the difference between feeling like part of
-    // the system and feeling like a web page someone left open.
+    // Windows can switch between light and dark while Cayrast is resident for days at
+    // a time. Following that live is the difference between feeling like part of the
+    // system and feeling like a web page someone left open.
     return watchSystemTheme(() => {
       if (app.settings) {
         applyTheme(app.settings);
@@ -22,9 +23,9 @@
   /**
    * Returns focus to the query field whenever the host shows the window.
    *
-   * The window is warm and reused, so it keeps whatever focus state it had when it
-   * was hidden. Without this the launcher would open with focus somewhere stale and
-   * silently swallow the first thing typed.
+   * The window is warm and reused, so it keeps whatever focus state it had when it was
+   * hidden. Without this the launcher opens with stale focus and silently swallows the
+   * first thing typed — which reads as the application being broken.
    */
   $effect(() => {
     const focusQuery = () => searchInput?.focus();
@@ -41,35 +42,29 @@
 
   function activate(index: number): void {
     app.selectedIndex = index;
-    submit();
-  }
-
-  function submit(): void {
-    const result = app.selected;
-    if (!result) {
-      return;
-    }
-
-    // Wired to the real action dispatcher in Phase 2, once the command engine and
-    // search providers exist to act on.
-    console.info('[cayrast] Activate', result.id);
+    void app.activate();
   }
 
   const showResults = $derived(app.results.length > 0);
-  const showEmptyState = $derived(app.query.trim().length > 0 && !app.searching && app.results.length === 0);
+  const showEmptyState = $derived(
+    app.query.trim().length > 0 && !app.searching && app.results.length === 0 && !app.output,
+  );
 </script>
 
-<main class="panel" class:panel--expanded={showResults || showEmptyState}>
-  <SearchInput bind:this={searchInput} onsubmit={submit} />
+<main class="panel">
+  <SearchInput bind:this={searchInput} onsubmit={() => void app.activate()} />
 
-  {#if showResults}
+  {#if app.output}
+    <div class="panel__divider"></div>
+    <OutputPanel text={app.output} oncopy={() => void app.copyOutput()} />
+  {:else if showResults}
     <div class="panel__divider"></div>
     <ResultList onactivate={activate} />
   {:else if showEmptyState}
     <div class="panel__divider"></div>
     <div class="empty">
-      <p class="empty__title">No results for "{app.query}"</p>
-      <p class="empty__hint">Search providers arrive in Phase&nbsp;2.</p>
+      <p class="empty__title">No results for &ldquo;{app.query}&rdquo;</p>
+      <p class="empty__hint">Try a different search, or type <kbd>help</kbd> to list commands.</p>
     </div>
   {/if}
 
@@ -86,9 +81,9 @@
     overflow: hidden;
 
     /*
-     * The native window already has a DWM Acrylic backdrop and rounded corners.
-     * This layer adds only the tint and hairline border on top of it — painting an
-     * opaque background here would hide the compositor effect entirely.
+     * The native window already carries a DWM Acrylic backdrop and rounded corners.
+     * This layer adds only the tint and hairline border on top — painting an opaque
+     * background here would hide the compositor effect entirely.
      */
     background: var(--cy-bg-panel);
     border: 1px solid var(--cy-border-panel);
@@ -122,10 +117,21 @@
     color: var(--cy-fg-tertiary);
   }
 
+  .empty__hint kbd {
+    padding: 1px 5px;
+    border-radius: var(--cy-radius-chip);
+    background: var(--cy-bg-chip);
+    font-family: var(--cy-font-mono);
+    font-size: 0.9em;
+  }
+
   .error {
     padding: var(--cy-space-3) var(--cy-space-5);
     border-top: 1px solid var(--cy-border-divider);
     font-size: var(--cy-text-subtitle);
+
+    /* Not a theme token: this must stay legible even under a theme that overrides
+       every colour, because it is how failures reach the user. */
     color: #ff6b6b;
   }
 </style>

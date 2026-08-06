@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Integration tests that exercise real Windows APIs.
+
+    Separate from Cayrast.Core.Tests on purpose. Those are fast, deterministic, and run
+    anywhere; these touch the shell, enumerate the machine's installed software, and
+    depend on what is actually on the box. Mixing the two would make a fast unit suite
+    slow and machine-dependent, and would tempt people to skip the whole thing.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>Cayrast.Integration.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Cayrast.Core\Cayrast.Core.csproj" />
+    <ProjectReference Include="..\..\src\Cayrast.Platform.Windows\Cayrast.Platform.Windows.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+</Project>

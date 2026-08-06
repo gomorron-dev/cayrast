@@ -1,8 +1,12 @@
 using System.Text.Json;
 using System.Windows;
 using Cayrast.Abstractions;
+using Cayrast.Abstractions.Applications;
 using Cayrast.Abstractions.Input;
 using Cayrast.Abstractions.Platform;
+using Cayrast.Abstractions.Search;
+using Cayrast.Core.Commands;
+using Cayrast.Core.Search;
 using Cayrast.Core.Settings;
 using Cayrast.Platform.Windows;
 using Cayrast.Shell.Bridge;
@@ -30,6 +34,12 @@ public sealed class CayrastHost(
     SingleInstance singleInstance,
     WebMessageBridge bridge,
     LauncherWindow window,
+    ISearchEngine searchEngine,
+    ICommandEngine commandEngine,
+    IFrecencyStore frecency,
+    IApplicationIndex applicationIndex,
+    ApplicationSearchProvider applicationProvider,
+    SearchCoordinator searchCoordinator,
     ILogger<CayrastHost> logger) : IAsyncDisposable
 {
     private const string LauncherHotkeyId = "launcher.toggle";
@@ -38,8 +48,11 @@ public sealed class CayrastHost(
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         await settings.LoadAsync(cancellationToken);
+        await frecency.LoadAsync(cancellationToken);
 
+        RegisterSearchAndCommands();
         RegisterBridgeChannels();
+        searchCoordinator.RegisterChannels();
         ListenForSecondInstance();
 
         await window.WarmUpAsync(cancellationToken);
@@ -49,6 +62,22 @@ public sealed class CayrastHost(
 
         settings.Changed += OnSettingsChanged;
         logger.LogInformation("{Product} started.", CayrastBrand.ProductName);
+
+        // Deliberately not awaited. Indexing applications takes a moment and the
+        // launcher is fully usable without it — commands work immediately, and
+        // applications appear as soon as the scan lands. Blocking startup on it would
+        // delay sign-in for no benefit.
+        _ = Task.Run(() => applicationIndex.InitializeAsync(CancellationToken.None), CancellationToken.None);
+    }
+
+    private void RegisterSearchAndCommands()
+    {
+        BuiltInCommands.RegisterAll(commandEngine);
+
+        // The command engine is itself a search provider, so commands rank alongside
+        // applications through the same pipeline rather than being special-cased.
+        searchEngine.RegisterProvider((ISearchProvider)commandEngine);
+        searchEngine.RegisterProvider(applicationProvider);
     }
 
     private void RegisterBridgeChannels()
@@ -87,9 +116,6 @@ public sealed class CayrastHost(
             return settings.Current;
         });
 
-        // Phase 2 replaces this with the real search pipeline. It answers now so the
-        // frontend can be built and tested against a real channel rather than a mock.
-        bridge.Register("search.query", (_, _) => Task.FromResult<object?>(new { results = Array.Empty<object>() }));
     }
 
     private void ListenForSecondInstance() =>
@@ -186,6 +212,12 @@ public sealed class CayrastHost(
 
         // Flush before exit so a debounced settings change is not lost.
         await settings.FlushAsync(CancellationToken.None);
+
+        // Frecency is only written on shutdown: it changes on every launch, and
+        // persisting each one would mean a disk write every time anything is opened.
+        await frecency.SaveAsync(CancellationToken.None);
+
+        searchCoordinator.Dispose();
 
         // Releases the out-of-process browser; without this it can outlive us.
         window.Dispose();

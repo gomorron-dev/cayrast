@@ -1,10 +1,14 @@
 using System.IO;
 using System.Windows;
 using Cayrast.Abstractions;
+using Cayrast.Abstractions.Applications;
 using Cayrast.Abstractions.Platform;
+using Cayrast.Core.Commands;
+using Cayrast.Core.Search;
 using Cayrast.Core.Settings;
 using Cayrast.Core.Storage;
 using Cayrast.Platform.Windows;
+using Cayrast.Platform.Windows.Applications;
 using Cayrast.Shell.Bridge;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -145,12 +149,25 @@ internal static class Program
         services.AddSingleton<IWindowEffects, WindowEffects>();
         services.AddSingleton<IMonitorService, MonitorService>();
 
+        services.AddSingleton<IApplicationIndex, ApplicationIndexer>();
+        services.AddSingleton<IApplicationLauncher, ApplicationLauncher>();
+
         // Core services.
         services.AddSingleton<ICayrastPaths>(CayrastPaths.Default);
         services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<IFrecencyStore, FrecencyStore>();
+        services.AddSingleton<ISearchEngine, SearchEngine>();
+        services.AddSingleton<ApplicationSearchProvider>();
+
+        // Registered by concrete type as well as by interface: the engine is a search
+        // provider and the host needs both faces of the same instance, which two
+        // separate registrations would not give.
+        services.AddSingleton<CommandEngine>();
+        services.AddSingleton<ICommandEngine>(provider => provider.GetRequiredService<CommandEngine>());
 
         // Shell.
         services.AddSingleton<WebMessageBridge>();
+        services.AddSingleton<SearchCoordinator>();
         services.AddSingleton<LauncherWindow>();
         services.AddSingleton<CayrastHost>();
 

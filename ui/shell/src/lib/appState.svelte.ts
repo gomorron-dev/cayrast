@@ -1,6 +1,18 @@
 import { bridge } from './bridge';
 import { applyTheme } from './theme';
-import type { CayrastSettings, SearchResponse, SearchResult } from './types';
+import type { CayrastSettings, SearchResult } from './types';
+
+interface SearchResponse {
+  query: string;
+  results: SearchResult[];
+}
+
+interface ActivateResponse {
+  ok: boolean;
+  close?: boolean;
+  copyText?: string | null;
+  message?: string | null;
+}
 
 /**
  * The launcher's shared reactive state.
@@ -27,14 +39,17 @@ class AppState {
   /** Last error worth showing the user, if any. */
   error = $state<string | null>(null);
 
+  /** Output from a command that asked to stay on screen, such as `calc` or `help`. */
+  output = $state<string | null>(null);
+
   /**
-   * Monotonic id of the most recently dispatched query.
+   * The query whose results are currently displayed.
    *
-   * Responses can arrive out of order — a slow query for "d" can land after a fast
-   * one for "disc". Without this check the stale response would overwrite fresher
-   * results and the list would visibly flicker backwards as the user types.
+   * Partial results arrive as unsolicited events while the user keeps typing, so each
+   * batch has to be checked against what is on screen now. Without this the list would
+   * visibly flicker backwards as a slower earlier query reported in.
    */
-  #latestQueryId = 0;
+  #displayedQuery = '';
 
   #debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -43,21 +58,31 @@ class AppState {
     return this.results[this.selectedIndex];
   }
 
-  /** Loads settings and applies them to the document. */
+  /** Loads settings, applies the theme, and subscribes to host events. */
   async initialise(): Promise<void> {
     try {
       const settings = await bridge.request<CayrastSettings>('settings.get');
       this.settings = settings;
       applyTheme(settings);
     } catch (error) {
-      // A failure here is not fatal: the built-in token defaults still render a
-      // usable interface, so the launcher opens rather than showing nothing.
+      // Not fatal: the stylesheet's own token defaults still render a usable
+      // interface, so the launcher opens rather than showing nothing.
       console.error('[cayrast] Could not load settings.', error);
     }
 
     bridge.on<CayrastSettings>('settings.changed', (settings) => {
       this.settings = settings;
       applyTheme(settings);
+    });
+
+    // Progressive results. The host emits a ranked snapshot each time a provider
+    // reports in, so fast providers paint while slow ones are still working.
+    bridge.on<SearchResponse>('search.partial', (payload) => {
+      if (!payload || payload.query !== this.query.trim()) {
+        return;
+      }
+
+      this.#applyResults(payload.query, payload.results);
     });
 
     bridge.on('app.shown', () => this.onShown());
@@ -68,53 +93,69 @@ class AppState {
     if (this.settings?.behavior.clearQueryOnHide !== false) {
       this.setQuery('');
     }
+
+    this.output = null;
+    this.error = null;
   }
 
   /** Updates the query and schedules a debounced search. */
   setQuery(value: string): void {
     this.query = value;
     this.selectedIndex = 0;
+    this.output = null;
 
     if (value.trim().length === 0) {
       this.results = [];
+      this.#displayedQuery = '';
       this.searching = false;
       clearTimeout(this.#debounceTimer);
       return;
     }
 
-    // Debounce so a burst of keystrokes mid-word produces one query rather than
-    // one per character, each of which the next would immediately supersede.
+    // Debounce so a burst of keystrokes mid-word produces one query rather than one
+    // per character, each of which the next would immediately supersede.
     clearTimeout(this.#debounceTimer);
     const delay = this.settings?.search.debounceMilliseconds ?? 40;
-    this.#debounceTimer = setTimeout(() => void this.#runSearch(value), delay);
+    this.#debounceTimer = setTimeout(() => void this.#runSearch(value.trim()), delay);
   }
 
   async #runSearch(query: string): Promise<void> {
-    const queryId = ++this.#latestQueryId;
     this.searching = true;
 
     try {
       const response = await bridge.request<SearchResponse>('search.query', { text: query });
 
-      // Discard anything that is no longer the newest query.
-      if (queryId !== this.#latestQueryId) {
-        return;
+      // The response can land after the user has moved on; partial events have the
+      // same hazard and the same guard.
+      if (response && response.query === this.query.trim()) {
+        this.#applyResults(response.query, response.results);
+        this.error = null;
       }
-
-      this.results = response?.results ?? [];
-      this.selectedIndex = 0;
-      this.error = null;
     } catch (error) {
-      if (queryId !== this.#latestQueryId) {
-        return;
+      if (query === this.query.trim()) {
+        this.results = [];
+        this.error = error instanceof Error ? error.message : 'Search failed.';
       }
-
-      this.results = [];
-      this.error = error instanceof Error ? error.message : 'Search failed.';
     } finally {
-      if (queryId === this.#latestQueryId) {
+      if (query === this.query.trim()) {
         this.searching = false;
       }
+    }
+  }
+
+  #applyResults(query: string, results: SearchResult[]): void {
+    const previousId = this.selected?.id;
+    this.#displayedQuery = query;
+    this.results = results ?? [];
+
+    // Keep the selection on whatever the user had highlighted if it survived the
+    // re-rank. Resetting to the top on every partial would move the selection out from
+    // under someone who had already arrowed down to what they wanted.
+    if (previousId) {
+      const index = this.results.findIndex((result) => result.id === previousId);
+      this.selectedIndex = index >= 0 ? index : 0;
+    } else {
+      this.selectedIndex = 0;
     }
   }
 
@@ -128,6 +169,62 @@ class AppState {
     // holding Down through a long list.
     const count = this.results.length;
     this.selectedIndex = (this.selectedIndex + delta + count) % count;
+  }
+
+  /** Runs an action on the selected result. */
+  async activate(actionId = 'default'): Promise<void> {
+    const result = this.selected;
+    if (!result) {
+      return;
+    }
+
+    try {
+      const response = await bridge.request<ActivateResponse>('result.activate', {
+        resultId: result.id,
+        actionId,
+      });
+
+      if (response?.copyText) {
+        await this.#copyToClipboard(response.copyText);
+      }
+
+      if (response?.message) {
+        // Commands such as `calc` and `help` return output meant to be read, so the
+        // launcher stays open showing it rather than dismissing.
+        this.output = response.message;
+      }
+
+      if (!response?.ok) {
+        this.error = response?.message ?? 'That action failed.';
+        return;
+      }
+
+      this.error = null;
+
+      if (response.close !== false && !response.message) {
+        this.hide();
+      }
+    } catch (error) {
+      this.error = error instanceof Error ? error.message : 'That action failed.';
+    }
+  }
+
+  /** Copies command output, so a result can be used rather than only read. */
+  async copyOutput(): Promise<void> {
+    if (this.output) {
+      await this.#copyToClipboard(this.output);
+    }
+  }
+
+  async #copyToClipboard(text: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (error) {
+      // The clipboard API needs a focused document and can refuse; failing silently
+      // would leave the user believing the copy worked.
+      console.error('[cayrast] Clipboard write failed.', error);
+      this.error = 'Could not copy to the clipboard.';
+    }
   }
 
   /** Asks the host to hide the launcher. */
