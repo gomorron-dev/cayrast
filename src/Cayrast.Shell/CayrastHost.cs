@@ -6,6 +6,7 @@ using Cayrast.Abstractions.Input;
 using Cayrast.Abstractions.Platform;
 using Cayrast.Abstractions.Search;
 using Cayrast.Core.Commands;
+using Cayrast.Core.Modules;
 using Cayrast.Core.Search;
 using Cayrast.Core.Settings;
 using Cayrast.Platform.Windows;
@@ -39,6 +40,9 @@ public sealed class CayrastHost(
     IFrecencyStore frecency,
     IApplicationIndex applicationIndex,
     ApplicationSearchProvider applicationProvider,
+    SettingsSearchProvider settingsProvider,
+    ISettingsRegistry settingsRegistry,
+    IModuleRegistry moduleRegistry,
     SearchCoordinator searchCoordinator,
     ILogger<CayrastHost> logger) : IAsyncDisposable
 {
@@ -68,6 +72,20 @@ public sealed class CayrastHost(
         // applications appear as soon as the scan lands. Blocking startup on it would
         // delay sign-in for no benefit.
         _ = Task.Run(() => applicationIndex.InitializeAsync(CancellationToken.None), CancellationToken.None);
+
+        // Likewise deferred. Modules are third-party code; discovering them must not be
+        // able to delay the launcher becoming usable.
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await moduleRegistry.DiscoverAsync(CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Module discovery failed.");
+            }
+        }, CancellationToken.None);
     }
 
     private void RegisterSearchAndCommands()
@@ -78,6 +96,7 @@ public sealed class CayrastHost(
         // applications through the same pipeline rather than being special-cased.
         searchEngine.RegisterProvider((ISearchProvider)commandEngine);
         searchEngine.RegisterProvider(applicationProvider);
+        searchEngine.RegisterProvider(settingsProvider);
     }
 
     private void RegisterBridgeChannels()
@@ -98,6 +117,29 @@ public sealed class CayrastHost(
         });
 
         bridge.Register("settings.get", (_, _) => Task.FromResult<object?>(settings.Current));
+
+        // The settings screen is generated from these descriptors rather than
+        // hand-built, which is also what makes settings searchable.
+        bridge.Register("settings.schema", (_, _) => Task.FromResult<object?>(new
+        {
+            settings = settingsRegistry.All,
+        }));
+
+        bridge.Register("modules.list", (_, _) => Task.FromResult<object?>(new
+        {
+            modules = moduleRegistry.Modules.Select(module => new
+            {
+                id = module.Id.Value,
+                name = module.Manifest.Name,
+                version = module.Manifest.Version,
+                author = module.Manifest.Author,
+                description = module.Manifest.Description,
+                permissions = module.RequestedPermissions.ToString(),
+                trustLevel = module.TrustLevel.ToString(),
+                state = module.State.ToString(),
+                failureReason = module.FailureReason,
+            }),
+        }));
 
         bridge.Register("settings.set", async (payload, token) =>
         {

@@ -4,6 +4,7 @@
   import SearchInput from './components/SearchInput.svelte';
   import ResultList from './components/ResultList.svelte';
   import OutputPanel from './components/OutputPanel.svelte';
+  import SettingsView from './components/SettingsView.svelte';
 
   let searchInput = $state<ReturnType<typeof SearchInput> | null>(null);
 
@@ -52,20 +53,24 @@
 </script>
 
 <main class="panel">
-  <SearchInput bind:this={searchInput} onsubmit={() => void app.activate()} />
+  {#if app.view === 'settings'}
+    <SettingsView />
+  {:else}
+    <SearchInput bind:this={searchInput} onsubmit={() => void app.activate()} />
 
-  {#if app.output}
-    <div class="panel__divider"></div>
-    <OutputPanel text={app.output} oncopy={() => void app.copyOutput()} />
-  {:else if showResults}
-    <div class="panel__divider"></div>
-    <ResultList onactivate={activate} />
-  {:else if showEmptyState}
-    <div class="panel__divider"></div>
-    <div class="empty">
-      <p class="empty__title">No results for &ldquo;{app.query}&rdquo;</p>
-      <p class="empty__hint">Try a different search, or type <kbd>help</kbd> to list commands.</p>
-    </div>
+    {#if app.output}
+      <div class="panel__divider"></div>
+      <OutputPanel text={app.output} oncopy={() => void app.copyOutput()} />
+    {:else if showResults}
+      <div class="panel__divider"></div>
+      <ResultList onactivate={activate} />
+    {:else if showEmptyState}
+      <div class="panel__divider"></div>
+      <div class="empty">
+        <p class="empty__title">No results for &ldquo;{app.query}&rdquo;</p>
+        <p class="empty__hint">Try a different search, or type <kbd>help</kbd> to list commands.</p>
+      </div>
+    {/if}
   {/if}
 
   {#if app.error}

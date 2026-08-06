@@ -1,6 +1,7 @@
 import { bridge } from './bridge';
 import { applyTheme } from './theme';
-import type { CayrastSettings, SearchResult } from './types';
+import { writeSetting } from './settingsPath';
+import type { CayrastSettings, ModuleInfo, SearchResult, SettingDescriptor } from './types';
 
 interface SearchResponse {
   query: string;
@@ -12,6 +13,7 @@ interface ActivateResponse {
   close?: boolean;
   copyText?: string | null;
   message?: string | null;
+  navigate?: string | null;
 }
 
 /**
@@ -41,6 +43,15 @@ class AppState {
 
   /** Output from a command that asked to stay on screen, such as `calc` or `help`. */
   output = $state<string | null>(null);
+
+  /** Which view is showing. */
+  view = $state<'search' | 'settings'>('search');
+
+  /** Setting descriptors, used to generate the settings screen. */
+  settingsSchema = $state<SettingDescriptor[]>([]);
+
+  /** Installed modules, shown in settings. */
+  modules = $state<ModuleInfo[]>([]);
 
   /**
    * The query whose results are currently displayed.
@@ -86,10 +97,88 @@ class AppState {
     });
 
     bridge.on('app.shown', () => this.onShown());
+
+    bridge.on<{ view: string }>('navigate', (payload) => {
+      if (payload?.view === 'settings') {
+        void this.openSettings();
+      }
+    });
+  }
+
+  /** Switches to the settings screen, loading its schema on first use. */
+  async openSettings(): Promise<void> {
+    this.view = 'settings';
+    this.output = null;
+
+    // Loaded lazily. The schema is only needed once someone opens settings, and
+    // fetching it at startup would add work to the path that delays sign-in.
+    if (this.settingsSchema.length === 0) {
+      try {
+        const response = await bridge.request<{ settings: SettingDescriptor[] }>('settings.schema');
+        this.settingsSchema = response?.settings ?? [];
+      } catch (error) {
+        console.error('[cayrast] Could not load the settings schema.', error);
+        this.error = 'Could not load settings.';
+      }
+    }
+
+    try {
+      const response = await bridge.request<{ modules: ModuleInfo[] }>('modules.list');
+      this.modules = response?.modules ?? [];
+    } catch {
+      // Modules are supplementary; failing to list them must not stop settings opening.
+      this.modules = [];
+    }
+  }
+
+  /** Returns to the search screen. */
+  closeSettings(): void {
+    this.view = 'search';
+    this.setQuery('');
+  }
+
+  /**
+   * Changes one setting by its descriptor id.
+   *
+   * Ids are dotted paths into the settings object, so the whole object is edited by
+   * path and sent back. That means the host needs no per-setting mapping — and no
+   * switch statement anyone has to remember to extend when adding a setting.
+   */
+  async updateSetting(id: string, value: unknown): Promise<void> {
+    if (!this.settings) {
+      return;
+    }
+
+    const previous = this.settings;
+    const updated = writeSetting(previous, id, value);
+
+    // Applied locally first so sliders track the pointer rather than lagging a
+    // round-trip behind it.
+    this.settings = updated;
+
+    try {
+      // The host normalises and clamps, then returns what it actually stored — which
+      // may differ from what was sent. Adopting the response keeps the interface
+      // showing the truth rather than an optimistic value that was rejected.
+      const stored = await bridge.request<CayrastSettings>('settings.set', updated);
+      if (stored) {
+        this.settings = stored;
+        applyTheme(stored);
+      }
+    } catch (error) {
+      console.error('[cayrast] Could not save the setting.', error);
+      this.settings = previous;
+      this.error = 'Could not save that setting.';
+    }
   }
 
   /** Called when the host shows the window. */
   onShown(): void {
+    // The window is warm and reused, so it keeps whatever state it had when hidden.
+    // Reopening into a settings screen someone left twenty minutes ago is not what
+    // pressing the launcher hotkey means.
+    this.view = 'search';
+
     if (this.settings?.behavior.clearQueryOnHide !== false) {
       this.setQuery('');
     }
@@ -183,6 +272,11 @@ class AppState {
         resultId: result.id,
         actionId,
       });
+
+      if (response?.navigate === 'settings') {
+        await this.openSettings();
+        return;
+      }
 
       if (response?.copyText) {
         await this.#copyToClipboard(response.copyText);

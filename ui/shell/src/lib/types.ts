@@ -117,3 +117,56 @@ export interface AppInfo {
   version: string;
   os: string;
 }
+
+/** The control type used to edit a setting. */
+export type SettingKind =
+  | 'Boolean'
+  | 'Text'
+  | 'Integer'
+  | 'Slider'
+  | 'Choice'
+  | 'Color'
+  | 'Hotkey'
+  | 'Path';
+
+/**
+ * One setting, as declared by the host.
+ *
+ * The settings screen is generated from these rather than hand-built, which is the
+ * only reason settings search can exist: the screen and the search index are the same
+ * data, so they cannot drift apart.
+ */
+export interface SettingDescriptor {
+  id: string;
+  category: string;
+  label: string;
+  description: string | null;
+  kind: SettingKind;
+  defaultValue: unknown;
+
+  /**
+   * Extra terms that should match this setting.
+   *
+   * What lets someone find the transparency slider by typing "glass" or "acrylic"
+   * rather than having to guess the label a developer chose.
+   */
+  keywords: string[];
+  choices: { value: string; label: string }[];
+  minimum: number | null;
+  maximum: number | null;
+  ownerModuleId: string | null;
+  requiresRestart: boolean;
+}
+
+/** An installed module, as reported by the host. */
+export interface ModuleInfo {
+  id: string;
+  name: string;
+  version: string;
+  author: string;
+  description: string;
+  permissions: string;
+  trustLevel: string;
+  state: string;
+  failureReason: string | null;
+}

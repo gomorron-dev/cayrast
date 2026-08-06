@@ -4,6 +4,7 @@ using Cayrast.Abstractions;
 using Cayrast.Abstractions.Applications;
 using Cayrast.Abstractions.Platform;
 using Cayrast.Core.Commands;
+using Cayrast.Core.Modules;
 using Cayrast.Core.Search;
 using Cayrast.Core.Settings;
 using Cayrast.Core.Storage;
@@ -157,7 +158,11 @@ internal static class Program
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IFrecencyStore, FrecencyStore>();
         services.AddSingleton<ISearchEngine, SearchEngine>();
+        services.AddSingleton<ISettingsRegistry, SettingsRegistry>();
         services.AddSingleton<ApplicationSearchProvider>();
+        services.AddSingleton<SettingsSearchProvider>();
+        services.AddSingleton<PermissionBroker>();
+        services.AddSingleton<IModuleRegistry, ModuleRegistry>();
 
         // Registered by concrete type as well as by interface: the engine is a search
         // provider and the host needs both faces of the same instance, which two

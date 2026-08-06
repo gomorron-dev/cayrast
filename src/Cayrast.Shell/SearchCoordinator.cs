@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Cayrast.Abstractions.Applications;
 using Cayrast.Abstractions.Search;
+using Cayrast.Abstractions.Settings;
 using Cayrast.Core.Commands;
 using Cayrast.Core.Search;
 using Cayrast.Core.Settings;
@@ -17,6 +18,13 @@ public sealed record SearchRequest(string Text);
 /// <param name="ResultId">Identifier of the chosen result.</param>
 /// <param name="ActionId">Which of its actions to run.</param>
 public sealed record ActivateRequest(string ResultId, string ActionId);
+
+/// <summary>The outcome of activating a result.</summary>
+/// <param name="Ok">Whether the action succeeded.</param>
+/// <param name="Close">Whether the launcher should dismiss.</param>
+/// <param name="Navigate">A view to switch to, such as <c>settings</c>.</param>
+/// <param name="Highlight">An element for the target view to draw attention to.</param>
+public sealed record ActivationResult(bool Ok, bool Close, string? Navigate = null, string? Highlight = null);
 
 /// <summary>
 /// Bridges the streaming search engine to the request/response frontend.
@@ -155,6 +163,13 @@ public sealed class SearchCoordinator(
         {
             InstalledApplication application => ActivateApplication(application, request.ActionId),
             string verb => await ActivateCommandAsync(verb, _lastQueryText, cancellationToken),
+
+            // Choosing a setting from search opens the settings screen rather than
+            // trying to edit it inline. Editing a slider from a one-line result row
+            // would be worse than showing it in context beside its neighbours.
+            SettingDescriptor descriptor => new ActivationResult(
+                Ok: true, Close: false, Navigate: "settings", Highlight: descriptor.Id),
+
             _ => new { ok = false, message = "That result cannot be activated yet." },
         };
     }
