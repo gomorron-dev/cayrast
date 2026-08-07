@@ -214,8 +214,9 @@ public sealed class LauncherWindow : Window, IDisposable
 
         _bridge.Attach(core);
 
-        // Transparent so the DWM backdrop shows through the page.
-        _webView.DefaultBackgroundColor = System.Drawing.Color.Transparent;
+        // Set an opaque default background color so DirectX WebView2 composition renders
+        // reliably on all hardware without discarding transparent swapchain pixels.
+        _webView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(255, 32, 32, 34);
 
         core.Navigate($"https://{CayrastBrand.ShellVirtualHost}/index.html");
         _logger.LogInformation("Frontend served from {Path}.", uiRoot);
