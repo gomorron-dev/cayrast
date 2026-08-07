@@ -10,9 +10,14 @@ versions. Such changes are always called out under **Changed** with a migration 
 
 ---
 
-## [Unreleased]
+## [0.1.0] - 2026-08-07
 
 ### Added
+
+- **File Search**: Bounded breadth-first filesystem search provider (`FileSearchProvider`) searching Desktop, Documents, Downloads, Pictures, and user-configured `IndexedFolders`. Excludes developer directories (`node_modules`, `.git`, `bin`, `obj`, etc.) and system/hidden files.
+- **Theme Loader**: `ThemeService` for discovering, deserializing, validating, and applying `.cayrast-theme` packages from disk.
+- **Typed Result Activation**: Introduced `ResultTargets.FileTarget` and `ResultTargets.CommandTarget` records to safely handle file activations (`Open`, `RevealInExplorer`, `copy-path`) without verb collisions.
+- **CI & Test Hardening**: Strict dependency resolution with `npm ci`, frontend type-checking, and test suite expansion to 180 tests.
 
 Phase 2 — the launcher does its actual job, and the plugin SDK is real.
 
@@ -92,4 +97,4 @@ The application launches, registers its hotkey, and shows a window.
 - Documentation: README, architecture, roadmap, contributing, security, code of conduct
 - CI: build and test on Windows; release workflow triggered by version tags
 
-[Unreleased]: https://github.com/gomorron-dev/cayrast/commits/main
+[0.1.0]: https://github.com/gomorron-dev/cayrast/releases/tag/v0.1.0
