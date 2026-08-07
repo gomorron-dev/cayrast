@@ -96,13 +96,20 @@ jobs:
       - name: Build the installer
         shell: pwsh
         run: |
-          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          $iscc = (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source
+          if (-not $iscc -or -not (Test-Path $iscc)) {
+            $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          }
+          if (-not (Test-Path $iscc)) {
+            $iscc = "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
+          }
 
           if (-not (Test-Path $iscc)) {
             Write-Host "::warning::Inno Setup was not found; the release will ship the archive only."
             exit 0
           }
 
+          Write-Host "Using Inno Setup compiler at $iscc"
           & $iscc "tools/Cayrast.Installer/Cayrast.iss" `
             "/DAppVersion=${{ steps.version.outputs.full }}" `
             "/DSourceDir=$(Resolve-Path artifacts/publish)"
@@ -141,11 +148,7 @@ jobs:
           prerelease: ${{ steps.version.outputs.prerelease }}
           name: Cayrast ${{ steps.version.outputs.full }}
           tag_name: ${{ github.ref_name }}
-          files: |
-            artifacts/release/*.zip
-            artifacts/release/*.exe
-            artifacts/release/SHA256SUMS.txt
-          fail_on_unmatched_files: false
+          files: artifacts/release/*
           body: |
             ## Cayrast ${{ steps.version.outputs.full }}
 
