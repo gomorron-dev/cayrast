@@ -28,18 +28,22 @@ public sealed class ApplicationLauncher(ILogger<ApplicationLauncher> logger) : I
                 });
             }
 
-            return Start(new ProcessStartInfo
+            var startInfo = new ProcessStartInfo
             {
                 FileName = application.LaunchId,
 
                 // Required so that shortcuts, registered file types, and elevation
                 // manifests are all honoured by the shell rather than bypassed.
                 UseShellExecute = true,
+            };
 
-                // Applications that read files relative to their own location break
-                // without this — a surprisingly common assumption in older software.
-                WorkingDirectory = Path.GetDirectoryName(application.LaunchId) ?? string.Empty,
-            });
+            var workDir = Path.GetDirectoryName(application.LaunchId);
+            if (!string.IsNullOrEmpty(workDir) && Directory.Exists(workDir))
+            {
+                startInfo.WorkingDirectory = workDir;
+            }
+
+            return Start(startInfo);
         }
         catch (Exception ex)
         {

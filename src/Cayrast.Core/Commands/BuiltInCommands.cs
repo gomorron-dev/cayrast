@@ -29,6 +29,7 @@ public static class BuiltInCommands
         RegisterTimestamp(engine);
         RegisterJson(engine);
         RegisterHelp(engine);
+        RegisterSettings(engine);
     }
 
     private static void RegisterCalculator(ICommandEngine engine) => engine.Register(
@@ -433,6 +434,18 @@ public static class BuiltInCommands
             listing.AppendLine().Append("Type 'help <command>' for details and examples.");
             return ValueTask.FromResult(CommandOutcome.Display(listing.ToString()));
         }));
+
+    private static void RegisterSettings(ICommandEngine engine) => engine.Register(
+        new CommandDescriptor
+        {
+            Verb = "settings",
+            Aliases = ["config", "options", "preferences", "configure"],
+            Summary = "Open Cayrast application settings",
+            Usage = "settings",
+            Examples = ["settings", "config"],
+        },
+        new DelegateCommandHandler(execute: (_, _) =>
+            ValueTask.FromResult(CommandOutcome.OpenView("settings"))));
 }
 
 /// <summary>Adapts delegates to <see cref="ICommandHandler"/>.</summary>

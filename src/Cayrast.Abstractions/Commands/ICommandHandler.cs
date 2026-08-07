@@ -36,7 +36,8 @@ public sealed record CommandInvocation(string Verb, string Arguments);
 /// Whether to dismiss the window. False for commands whose output the user needs to
 /// read, such as <c>help</c> or <c>calc</c>.
 /// </param>
-public sealed record CommandOutcome(bool Succeeded, string? Message = null, bool ShouldCloseLauncher = true)
+/// <param name="Navigate">Optional view to navigate the interface to, such as <c>settings</c>.</param>
+public sealed record CommandOutcome(bool Succeeded, string? Message = null, bool ShouldCloseLauncher = true, string? Navigate = null)
 {
     /// <summary>The command ran and the launcher should dismiss.</summary>
     public static CommandOutcome Ok(string? message = null) => new(true, message);
@@ -46,4 +47,7 @@ public sealed record CommandOutcome(bool Succeeded, string? Message = null, bool
 
     /// <summary>The command failed for an expected reason. The launcher stays open showing why.</summary>
     public static CommandOutcome Failure(string message) => new(false, message, ShouldCloseLauncher: false);
+
+    /// <summary>Navigates the UI to a specific view, keeping the launcher open.</summary>
+    public static CommandOutcome OpenView(string view) => new(true, ShouldCloseLauncher: false, Navigate: view);
 }

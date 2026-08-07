@@ -240,6 +240,7 @@ public sealed class SearchCoordinator(
             ok = outcome.Succeeded,
             close = outcome.ShouldCloseLauncher,
             message = outcome.Message,
+            navigate = outcome.Navigate,
         };
     }
 
