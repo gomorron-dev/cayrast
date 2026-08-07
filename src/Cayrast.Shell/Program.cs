@@ -8,6 +8,7 @@ using Cayrast.Core.Modules;
 using Cayrast.Core.Search;
 using Cayrast.Core.Settings;
 using Cayrast.Core.Storage;
+using Cayrast.Core.Theming;
 using Cayrast.Platform.Windows;
 using Cayrast.Platform.Windows.Applications;
 using Cayrast.Shell.Bridge;
@@ -161,6 +162,8 @@ internal static class Program
         services.AddSingleton<ISettingsRegistry, SettingsRegistry>();
         services.AddSingleton<ApplicationSearchProvider>();
         services.AddSingleton<SettingsSearchProvider>();
+        services.AddSingleton<FileSearchProvider>();
+        services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<PermissionBroker>();
         services.AddSingleton<IModuleRegistry, ModuleRegistry>();
 

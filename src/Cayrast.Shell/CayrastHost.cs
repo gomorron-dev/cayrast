@@ -9,6 +9,7 @@ using Cayrast.Core.Commands;
 using Cayrast.Core.Modules;
 using Cayrast.Core.Search;
 using Cayrast.Core.Settings;
+using Cayrast.Core.Theming;
 using Cayrast.Platform.Windows;
 using Cayrast.Shell.Bridge;
 using Microsoft.Extensions.Logging;
@@ -41,6 +42,8 @@ public sealed class CayrastHost(
     IApplicationIndex applicationIndex,
     ApplicationSearchProvider applicationProvider,
     SettingsSearchProvider settingsProvider,
+    FileSearchProvider fileProvider,
+    IThemeService themes,
     ISettingsRegistry settingsRegistry,
     IModuleRegistry moduleRegistry,
     SearchCoordinator searchCoordinator,
@@ -53,6 +56,7 @@ public sealed class CayrastHost(
     {
         await settings.LoadAsync(cancellationToken);
         await frecency.LoadAsync(cancellationToken);
+        await themes.RefreshAsync(cancellationToken);
 
         RegisterSearchAndCommands();
         RegisterBridgeChannels();
@@ -97,6 +101,11 @@ public sealed class CayrastHost(
         searchEngine.RegisterProvider((ISearchProvider)commandEngine);
         searchEngine.RegisterProvider(applicationProvider);
         searchEngine.RegisterProvider(settingsProvider);
+
+        // Registered last, which is also the order results tend to arrive in: this is
+        // the only provider that touches the disk, and its results are discounted so
+        // they cannot crowd out applications and commands.
+        searchEngine.RegisterProvider(fileProvider);
     }
 
     private void RegisterBridgeChannels()

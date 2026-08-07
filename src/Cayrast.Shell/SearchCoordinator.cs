@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text.Json;
 using Cayrast.Abstractions.Applications;
 using Cayrast.Abstractions.Search;
@@ -162,7 +163,8 @@ public sealed class SearchCoordinator(
         return result.Tag switch
         {
             InstalledApplication application => ActivateApplication(application, request.ActionId),
-            string verb => await ActivateCommandAsync(verb, _lastQueryText, cancellationToken),
+            ResultTargets.FileTarget file => ActivateFile(file, request.ActionId),
+            ResultTargets.CommandTarget command => await ActivateCommandAsync(command.Verb, _lastQueryText, cancellationToken),
 
             // Choosing a setting from search opens the settings screen rather than
             // trying to edit it inline. Editing a slider from a one-line result row
@@ -192,6 +194,28 @@ public sealed class SearchCoordinator(
             // document and can use the async clipboard API without any extra permission.
             copyText = actionId == "copy-path" ? application.LaunchId : null,
             message = succeeded ? null : $"Could not open {application.Name}.",
+        };
+    }
+
+    private object ActivateFile(ResultTargets.FileTarget file, string actionId)
+    {
+        var succeeded = actionId switch
+        {
+            "reveal" => launcher.RevealInExplorer(file.Path),
+
+            // The frontend does the clipboard write: it has a focused document and can
+            // use the async clipboard API without any extra permission.
+            "copy-path" => true,
+
+            _ => launcher.Open(file.Path),
+        };
+
+        return new
+        {
+            ok = succeeded,
+            close = true,
+            copyText = actionId == "copy-path" ? file.Path : null,
+            message = succeeded ? null : $"Could not open {Path.GetFileName(file.Path)}.",
         };
     }
 

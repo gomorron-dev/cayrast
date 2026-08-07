@@ -195,7 +195,7 @@ public sealed class CommandEngine(ILogger<CommandEngine> logger) : ICommandEngin
             // name, which leaves little room for doubt about intent.
             Score = 1.0,
             Actions = [ResultAction.Default(preview is not null ? "Copy result" : "Run")],
-            Tag = descriptor.Verb,
+            Tag = new ResultTargets.CommandTarget(descriptor.Verb),
         };
     }
 
@@ -234,7 +234,7 @@ public sealed class CommandEngine(ILogger<CommandEngine> logger) : ICommandEngin
                 Score = score,
                 TitleMatchIndices = verbMatch.Matched ? verbMatch.MatchedIndices : [],
                 Actions = [ResultAction.Default("Run")],
-                Tag = descriptor.Verb,
+                Tag = new ResultTargets.CommandTarget(descriptor.Verb),
             };
         }
     }
