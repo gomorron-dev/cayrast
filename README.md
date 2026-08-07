@@ -10,10 +10,11 @@ An open-source desktop command center for Windows — a fast launcher built on a
 plugin platform, where almost every feature is a module using the same public SDK you can.
 
 [![Build](https://github.com/gomorron-dev/cayrast/actions/workflows/build.yml/badge.svg)](https://github.com/gomorron-dev/cayrast/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/gomorron-dev/cayrast?color=8d8473)](https://github.com/gomorron-dev/cayrast/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-8d8473)](LICENSE)
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-8d8473)](https://dotnet.microsoft.com/)
 [![Platform: Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-8d8473)](#requirements)
-[![Tests](https://img.shields.io/badge/tests-175%20passing-8d8473)](#testing)
+[![Tests](https://img.shields.io/badge/tests-180%20passing-8d8473)](#testing)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-8d8473)](CONTRIBUTING.md)
 
 [Getting started](#getting-started) ·
@@ -27,18 +28,12 @@ plugin platform, where almost every feature is a module using the same public SD
 
 ---
 
-> [!WARNING]
-> **Pre-alpha. Buildable, not yet released.**
+> [!NOTE]
+> **v0.1.0 is released.**
 >
-> Phases 1 and 2 are complete — Cayrast launches, indexes your applications, runs
-> commands, and loads modules. **If you build from source, it works today.**
+> Cayrast launches, indexes your applications, searches files, runs commands, loads themes, and executes plugin modules. Downloads are available as an Inno Setup installer or portable zip on the [Releases](https://github.com/gomorron-dev/cayrast/releases) page.
 >
-> There is **no download yet**: no tagged release, no installer artifact. The official
-> modules (clipboard, file tools, QR, widgets) are not written. And
-> **[module sandboxing is not implemented](#a-note-on-module-security)** — module
-> permissions are advisory, not enforced.
->
-> Watch the repo or follow the [roadmap](docs/ROADMAP.md) for progress.
+> Note: **[module sandboxing is not implemented](#a-note-on-module-security)** — module permissions are advisory, not enforced. See [SECURITY.md](SECURITY.md).
 
 ---
 
@@ -97,15 +92,16 @@ Verified on Windows 11, built from source:
 |---|---|
 | **Instant launcher** | Warm window; Alt+Space is a `ShowWindow` call |
 | **Application search** | 284 apps indexed in ~1.5 s — matching exactly what `Get-StartApps` reports. Desktop *and* Store apps through one code path |
+| **File search** | Bounded live walk over Desktop, Documents, Downloads, Pictures, and custom paths, excluding `.git`, `node_modules`, etc. |
 | **Fuzzy matching** | fzf-style scoring with highlighted match positions, so you see *why* something matched |
 | **Frecency ranking** | What you use most and most recently rises to the top. Local only |
 | **Commands** | `calc`, `uuid`, `base64`, `sha256`, `timestamp`, `json`, `help` — with live preview as you type |
 | **Searchable settings** | Generated from descriptors; type "glass" to find the transparency slider |
 | **Module loading** | `.cayrast` packages, manifest validation, isolated and unloadable contexts |
-| **Themes** | CSS variable overrides with allow-list validation |
+| **Themes** | `.cayrast-theme` package loader with CSS variable sanitisation |
 | **Multi-monitor** | Opens on the monitor with your cursor; correct under mixed DPI |
 
-**175 tests pass** — including ones that build genuinely malicious module packages
+**180 tests pass** — including ones that build genuinely malicious module packages
 (zip slip, zip bombs, CSS injection) and confirm they are refused.
 
 > **Screenshots** will be added once the interface stops changing week to week.
