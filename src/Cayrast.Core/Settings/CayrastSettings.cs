@@ -242,7 +242,7 @@ public sealed record BehaviorSettings
     /// behaviour that makes people distrust utilities; the first-run wizard asks instead.
     /// </remarks>
     [JsonPropertyName("launchAtStartup")]
-    public bool LaunchAtStartup { get; init; }
+    public bool LaunchAtStartup { get; init; } = true;
 
     /// <summary>Hide the launcher when it loses focus.</summary>
     [JsonPropertyName("hideOnFocusLoss")]

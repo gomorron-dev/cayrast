@@ -199,7 +199,7 @@ public sealed class SettingsServiceTests : IDisposable
         Assert.False(service.Current.Privacy.EnableBrowserHistory);
         Assert.True(service.Current.Privacy.EncryptClipboard);
         Assert.True(service.Current.Privacy.RespectClipboardExclusions);
-        Assert.False(service.Current.Behavior.LaunchAtStartup);
+        Assert.True(service.Current.Behavior.LaunchAtStartup);
         Assert.False(service.Current.Updates.AutomaticallyInstall);
     }
 

@@ -58,8 +58,8 @@ UninstallDisplayName={#AppName}
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Shortcuts:"; Flags: unchecked
-Name: "startup"; Description: "Start {#AppName} when I sign in"; GroupDescription: "Startup:"; Flags: unchecked
+Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Shortcuts:"
+Name: "startup"; Description: "Start {#AppName} when I sign in"; GroupDescription: "Startup:"
 
 [Types]
 Name: "full"; Description: "Everything"
