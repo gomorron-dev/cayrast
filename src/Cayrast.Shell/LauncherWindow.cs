@@ -168,13 +168,57 @@ public sealed class LauncherWindow : Window, IDisposable
             uiRoot,
             CoreWebView2HostResourceAccessKind.Allow);
 
+        core.NavigationCompleted += (_, e) =>
+        {
+            if (e.IsSuccess)
+            {
+                _logger.LogInformation("CoreWebView2 navigation succeeded to {Uri}.", core.Source);
+            }
+            else
+            {
+                _logger.LogError("CoreWebView2 navigation failed to {Uri}. ErrorStatus: {Status}", core.Source, e.WebErrorStatus);
+            }
+        };
+
+        core.ProcessFailed += (_, e) =>
+        {
+            _logger.LogError("CoreWebView2 process failed: Kind={Kind}, ExitCode={ExitCode}", e.ProcessFailedKind, e.ExitCode);
+        };
+
+        await core.AddScriptToExecuteOnDocumentCreatedAsync(@"
+            window.onerror = function(message, source, lineno, colno, error) {
+                console.error('[JS Error]', message, source, lineno, colno, error);
+                window.chrome.webview.postMessage(JSON.stringify({
+                    kind: 2,
+                    correlationId: 'err',
+                    channel: 'log.error',
+                    payload: { message: String(message), source: String(source), line: lineno, col: colno, stack: error ? String(error.stack) : '' }
+                }));
+            };
+            window.addEventListener('unhandledrejection', function(event) {
+                console.error('[JS Rejection]', event.reason);
+                window.chrome.webview.postMessage(JSON.stringify({
+                    kind: 2,
+                    correlationId: 'err',
+                    channel: 'log.error',
+                    payload: { message: event.reason ? String(event.reason.message || event.reason) : 'Unhandled Rejection', stack: event.reason ? String(event.reason.stack) : '' }
+                }));
+            });
+        ");
+
+        _bridge.Register("log.error", (payload, _) =>
+        {
+            _logger.LogError("Frontend JS Error: {Payload}", payload);
+            return Task.FromResult<object?>(null);
+        });
+
         _bridge.Attach(core);
 
         // Transparent so the DWM backdrop shows through the page.
         _webView.DefaultBackgroundColor = System.Drawing.Color.Transparent;
 
         core.Navigate($"https://{CayrastBrand.ShellVirtualHost}/index.html");
-        _logger.LogDebug("Frontend served from {Path}.", uiRoot);
+        _logger.LogInformation("Frontend served from {Path}.", uiRoot);
     }
 
     private void ConfigureWebViewSettings(CoreWebView2 core)
@@ -231,19 +275,23 @@ public sealed class LauncherWindow : Window, IDisposable
             return;
         }
 
-        PositionOnActiveMonitor();
-
         // Recorded before Show() so the grace window covers the whole activation
         // sequence, including the foreground handover below.
         _shownAtTicks = Environment.TickCount64;
 
         Show();
+        PositionOnActiveMonitor();
         Activate();
 
         // WPF's Activate() is unreliable when another application owns the foreground.
         // The launcher is the legitimate exception to the focus-stealing rules — the
         // user just pressed its hotkey — so foreground is taken deliberately.
         _windowEffects.ForceForeground(_handle);
+
+        // Force WPF's HwndHost layout pass so the WebView2 child window resizes
+        // and arranges to fill the window surface.
+        _webView.InvalidateMeasure();
+        _webView.UpdateLayout();
 
         // Focus must reach the WebView or keystrokes go nowhere, which presents as the
         // launcher opening but ignoring typing.
@@ -310,6 +358,9 @@ public sealed class LauncherWindow : Window, IDisposable
             _ => (Centered(monitor.WorkAreaX, monitor.WorkAreaWidth, width),
                   monitor.WorkAreaY + (int)((monitor.WorkAreaHeight - height) * 0.32)),
         };
+
+        Width = width / monitor.Scale;
+        Height = height / monitor.Scale;
 
         _windowEffects.SetBounds(_handle, x, y, width, height);
     }
