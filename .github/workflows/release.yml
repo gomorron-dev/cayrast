@@ -90,10 +90,12 @@ jobs:
           New-Item -ItemType Directory -Force -Path artifacts/publish/ui | Out-Null
           Copy-Item -Path ui/shell/dist/* -Destination artifacts/publish/ui -Recurse -Force
 
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress
+
       - name: Build the installer
         shell: pwsh
         run: |
-          # Inno Setup is preinstalled on GitHub's windows-latest images.
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
 
           if (-not (Test-Path $iscc)) {
@@ -139,10 +141,7 @@ jobs:
           prerelease: ${{ steps.version.outputs.prerelease }}
           name: Cayrast ${{ steps.version.outputs.full }}
           tag_name: ${{ github.ref_name }}
-          files: |
-            artifacts/release/*.exe
-            artifacts/release/*.zip
-            artifacts/release/SHA256SUMS.txt
+          files: artifacts/release/*
           body: |
             ## Cayrast ${{ steps.version.outputs.full }}
 
