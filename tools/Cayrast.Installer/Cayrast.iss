@@ -41,6 +41,7 @@ OutputDir=Output
 OutputBaseFilename=Cayrast-{#AppVersion}-Setup
 Compression=lzma2/max
 SolidCompression=yes
+SetupIconFile=..\..\assets\icon.ico
 WizardStyle=modern
 
 ; Cayrast targets Windows 10 1809 and later; WebView2 and the DWM backdrop APIs are

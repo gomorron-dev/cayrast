@@ -23,6 +23,7 @@
       ordering precisely (single-instance check must happen before any WPF or
       WebView2 initialisation, which is expensive).
     -->
+    <ApplicationIcon>..\..\assets\icon.ico</ApplicationIcon>
     <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
   </PropertyGroup>
 
