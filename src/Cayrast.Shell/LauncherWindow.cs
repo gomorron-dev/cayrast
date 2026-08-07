@@ -94,7 +94,7 @@ public sealed class LauncherWindow : Window, IDisposable
         // destroys scrolling performance. Translucency comes from the DWM backdrop
         // applied to the native window instead, which stays hardware accelerated.
         AllowsTransparency = false;
-        Background = Brushes.Transparent;
+        Background = (Brush)new BrushConverter().ConvertFrom("#1e1e20")!;
 
         // Sized in device pixels during Show(); these are only a sane starting point
         // for the hidden warm-up instance.
