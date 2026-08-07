@@ -132,7 +132,7 @@ jobs:
           Get-Content artifacts/release/SHA256SUMS.txt
 
       - name: Create draft release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v2
         with:
           # Deliberately a draft. A maintainer reviews the artifacts and writes the
           # notes before anything reaches users — releases are not something to
@@ -141,7 +141,11 @@ jobs:
           prerelease: ${{ steps.version.outputs.prerelease }}
           name: Cayrast ${{ steps.version.outputs.full }}
           tag_name: ${{ github.ref_name }}
-          files: artifacts/release/*
+          files: |
+            artifacts/release/*.zip
+            artifacts/release/*.exe
+            artifacts/release/SHA256SUMS.txt
+          fail_on_unmatched_files: false
           body: |
             ## Cayrast ${{ steps.version.outputs.full }}
 
