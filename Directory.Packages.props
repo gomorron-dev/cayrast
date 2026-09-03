@@ -45,7 +45,7 @@
       to be no newer than the installed runtime; pinning near it avoids calling APIs
       that are missing on user machines.
     -->
-    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.4129.50" />
+    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
   </ItemGroup>
 
   <ItemGroup Label="Storage">
